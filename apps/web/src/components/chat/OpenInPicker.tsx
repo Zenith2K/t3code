@@ -408,6 +408,9 @@ export const OpenInPicker = memo(function OpenInPicker({
             aria-hidden="true"
             className={cn(
               isPanel ? THREAD_DETAILS_PANEL_ICON_CLASS : "size-3.5",
+              // Brand marks fill their whole box; inset them to the glyph size of the panel's
+              // Lucide icons so the logo does not outweigh its neighbours.
+              isPanel && primaryOption.kind === "brand" && "p-[1.5px]",
               getOpenInIconClass(primaryOption.kind),
             )}
           />
