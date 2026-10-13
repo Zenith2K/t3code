@@ -21,9 +21,12 @@ import { cn } from "~/lib/utils";
  * Renders a span by default. Render it as a button, link or popover/tooltip trigger to make it
  * interactive; the hover tint follows from that, not from a prop. Anything focusable (including a
  * span with tabIndex for a tooltip) gets the focus outline.
+ *
+ * Leading icons are hidden: anything placed before a `ContextChipLabel` stays in the markup for
+ * callers but does not render, so every chip reads as text alone. Trailing actions still show.
  */
 const contextChipVariants = cva(
-  "inline-flex h-[1.41em] max-w-full items-center gap-[0.33em] rounded-[0.5em] border px-[0.5em] align-middle font-medium text-[0.86em] leading-none [&_svg]:block [&_svg]:size-[1.17em] [&_svg]:shrink-0 [&_svg]:self-center [button&,a&,[data-popup-open]&]:cursor-pointer [button&,a&]:transition-colors [button&,a&]:motion-reduce:transition-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-foreground disabled:cursor-default",
+  "inline-flex h-[1.41em] max-w-full items-center gap-[0.33em] rounded-[0.5em] border px-[0.5em] align-middle font-medium text-[0.86em] leading-none [&_svg]:block [&_svg]:size-[1.17em] [&_svg]:shrink-0 [&_svg]:self-center [&_:has(~[data-slot=context-chip-label])]:hidden [button&,a&,[data-popup-open]&]:cursor-pointer [button&,a&]:transition-colors [button&,a&]:motion-reduce:transition-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-foreground disabled:cursor-default",
   {
     defaultVariants: { kind: "neutral" },
     variants: {
