@@ -12,9 +12,19 @@ export const PIERRE_TREE_UNSAFE_CSS = `
     --trees-border-color-override: color-mix(in srgb, currentColor 14%, transparent);
     --trees-font-family-override: var(--font-sans);
     --trees-font-size-override: 0.8125rem;
+    /* Tight left edge: rows start 4px in, their content 6px further. */
+    --trees-padding-inline-override: 4px;
+    --trees-item-padding-x-override: 6px;
+    --trees-icon-width-override: 14px;
+    --trees-item-row-gap-override: 4px;
+    /* Pierre indents a level by row gap + half an icon + level gap. A negative level
+       gap brings that to 9px while indent guides stay under the parent chevron. */
+    --trees-level-gap-override: calc(
+      9px + 0.5px - var(--trees-icon-width) / 2 - var(--trees-item-row-gap)
+    );
   }
   button[data-type='item'], button[data-type='item']::before { border-radius: var(--radius-md); }
-  /* Pierre draws every icon at 16px; scale file icons and chevrons down to sit with the names. */
+  /* Pierre draws every icon at 16px; fit file icons to the 14px slot and shrink chevrons. */
   [data-item-section='icon'] > svg { width: 14px; height: 14px; }
   [data-item-section='icon'] > svg[data-icon-name='file-tree-icon-chevron'] { width: 11px; height: 11px; }
   svg[data-icon-name='t3-tree-icon-loading'] { opacity: 0.6; }
