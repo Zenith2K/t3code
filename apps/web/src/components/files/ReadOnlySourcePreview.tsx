@@ -1,6 +1,8 @@
+import { DEFAULT_VIRTUAL_FILE_METRICS } from "@pierre/diffs";
 import { File, type FileOptions, Virtualizer } from "@pierre/diffs/react";
 
 import { DiffWorkerPoolProvider } from "~/components/DiffWorkerPoolProvider";
+import { useCodeLineHeight } from "~/hooks/useCodeLineHeight";
 import { useClientSettings } from "~/hooks/useSettings";
 import { useTheme } from "~/hooks/useTheme";
 import { resolveDiffThemeName } from "~/lib/diffRendering";
@@ -21,10 +23,11 @@ export default function ReadOnlySourcePreview(props: {
 }) {
   const { resolvedTheme } = useTheme();
   const wordWrap = useClientSettings((settings) => settings.wordWrap);
+  const lineHeight = useCodeLineHeight();
   return (
     <DiffWorkerPoolProvider>
       <Virtualizer
-        key={`${props.name}:${resolvedTheme}:${props.text.length}`}
+        key={`${props.name}:${resolvedTheme}:${props.text.length}:${lineHeight}`}
         className="file-preview-virtualizer min-h-0 flex-1 overflow-auto"
         config={{ overscrollSize: 600, intersectionObserverMargin: 1200 }}
       >
@@ -34,6 +37,7 @@ export default function ReadOnlySourcePreview(props: {
             contents: props.text,
             ...(props.cacheKey ? { cacheKey: props.cacheKey } : {}),
           }}
+          metrics={{ ...DEFAULT_VIRTUAL_FILE_METRICS, lineHeight }}
           options={{
             disableFileHeader: true,
             overflow: wordWrap ? "wrap" : "scroll",

@@ -1955,15 +1955,19 @@ code {
   font-weight: 600;
 }
 
+/* Sized like ContextChip (0.86em text in a 1.41em-tall box) so inline code and
+   file chips in one sentence match. Inline code stays inline so it can wrap, which
+   leaves its height to padding: SF Mono's glyph box is ~1.19em tall, and the
+   padding adds the rest minus the border. */
 .chat-markdown :not(pre) > code {
   border: 1px solid var(--contrast-border);
-  border-radius: 0.375rem;
+  border-radius: 0.5em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
   background: var(--muted);
-  padding: 0.1rem 0.35rem;
+  padding: calc(0.11em - 1px) 0.5em;
   color: var(--contrast-foreground);
-  font-size: 0.75rem;
+  font-size: 0.86em;
 }
 
 .chat-markdown pre {

@@ -119,8 +119,9 @@ export function applyAppearanceFontVariables(
   root.style.setProperty("--font-size-prompt", `${clampPromptFontSize(preferences.sizePrompt)}px`);
   const code = clampCodeFontSize(preferences.sizeCode);
   root.style.setProperty("--font-size-code", `${code}px`);
-  // The @pierre/diffs surfaces read their own hook for code text.
+  // The @pierre/diffs surfaces read their own hooks for code text.
   root.style.setProperty("--diffs-font-size", `${code}px`);
+  root.style.setProperty("--diffs-line-height", `${codeLineHeight(code)}px`);
 
   // Inherited from the root; only macOS engines honor the property, so no
   // platform gate is needed here. Smoothing on means grayscale `antialiased`
@@ -153,6 +154,14 @@ export function clampPromptFontSize(value: number): number {
 
 export function clampCodeFontSize(value: number): number {
   return clampFontSize(value, MIN_CODE_FONT_SIZE, MAX_CODE_FONT_SIZE, DEFAULT_CODE_FONT_SIZE);
+}
+
+/**
+ * Row height of file and diff code for a code font size. Whole pixels, because the
+ * virtualized views take it as their `lineHeight` metric and must match rendered rows.
+ */
+export function codeLineHeight(sizeCode: number): number {
+  return Math.round(clampCodeFontSize(sizeCode) * 1.75);
 }
 
 const FONT_PROBE_TEXT = "mmmmmmmmMMWli1O0@# fjord";

@@ -9,6 +9,7 @@ import {
 /* oxlint-enable eslint/no-restricted-imports */
 import type { Ref } from "react";
 
+import { useCodeLineHeight } from "~/hooks/useCodeLineHeight";
 import { DIFF_SURFACE_THEME_UNSAFE_CSS } from "~/lib/diffRendering";
 import { DiffWorkerPoolProvider } from "../DiffWorkerPoolProvider";
 
@@ -221,9 +222,11 @@ export function StyledDiffCodeView<LAnnotation = undefined>({
   unsafeCSSExtra,
   ...props
 }: StyledDiffCodeViewProps<LAnnotation>) {
+  const lineHeight = useCodeLineHeight();
   return (
     <DiffWorkerPoolProvider>
       <CodeView<LAnnotation>
+        key={lineHeight}
         {...props}
         {...(viewerRef ? { ref: viewerRef } : {})}
         // The custom element itself is focusable for keyboard scrolling. Its native outline sits
@@ -239,6 +242,7 @@ export function StyledDiffCodeView<LAnnotation = undefined>({
             ? `${DIFF_VIEW_UNSAFE_CSS}\n${unsafeCSSExtra}`
             : DIFF_VIEW_UNSAFE_CSS,
           itemMetrics: {
+            lineHeight,
             diffHeaderHeight: 32,
             hunkSeparatorHeight: 24,
             // Pierre uses its general file spacing as a fallback in expanded-file layout paths.

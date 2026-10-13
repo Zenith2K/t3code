@@ -21,7 +21,7 @@ import { useWorkspaceMutationRefresh } from "~/hooks/useWorkspaceMutationRefresh
 import { useFileContextMenu, type FileContextMenuAction } from "~/fileContextMenu";
 import { readLocalApi } from "~/localApi";
 import { T3_PIERRE_ICONS } from "~/pierre-icons";
-import { PIERRE_TREE_UNSAFE_CSS, pierreTreeStyle } from "~/pierre-tree-theme";
+import { PIERRE_TREE_LAYOUT, PIERRE_TREE_UNSAFE_CSS, pierreTreeStyle } from "~/pierre-tree-theme";
 
 import { createFileTreeDragMentionController } from "./fileTreeDragMention";
 import { areAllDirectoriesExpanded, setAllDirectoriesExpanded } from "./fileTreeExpansion";
@@ -263,7 +263,7 @@ export default function FileBrowserPanel({
     // Rows only need to be draggable so entries can be dropped into the chat
     // composer; rearranging files inside the tree stays off.
     dragAndDrop: { canDrop: () => false },
-    density: "compact",
+    ...PIERRE_TREE_LAYOUT,
     fileTreeSearchMode: "hide-non-matches",
     flattenEmptyDirectories: true,
     initialExpansion: "closed",

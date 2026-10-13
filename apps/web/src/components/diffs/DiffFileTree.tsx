@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTheme } from "~/hooks/useTheme";
 import { cn } from "~/lib/utils";
 import { T3_PIERRE_ICONS } from "~/pierre-icons";
-import { PIERRE_TREE_UNSAFE_CSS, pierreTreeStyle } from "~/pierre-tree-theme";
+import { PIERRE_TREE_LAYOUT, PIERRE_TREE_UNSAFE_CSS, pierreTreeStyle } from "~/pierre-tree-theme";
 
 import { areAllDirectoriesExpanded, setAllDirectoriesExpanded } from "../files/fileTreeExpansion";
 import { Button } from "../ui/button";
@@ -85,7 +85,7 @@ export function DiffFileTree({
   }, [onSelectFile, paths]);
 
   const { model } = useFileTree({
-    density: "compact",
+    ...PIERRE_TREE_LAYOUT,
     flattenEmptyDirectories: true,
     initialExpansion: "open",
     icons: T3_PIERRE_ICONS,
