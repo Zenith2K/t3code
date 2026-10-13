@@ -7099,6 +7099,30 @@ export default function ChatView(props: ChatViewProps) {
     composerTimelineInsetRef.current = 0;
     publishComposerOverlayHeight(composerOverlayElement.getBoundingClientRect().height);
   }, [composerMounted, composerOverlayElement, publishComposerOverlayHeight]);
+  // Publish how far the docked composer reaches up from the pane bottom, so the
+  // timeline's mask (timeline-scroll-fade) hides content before it slides behind it.
+  useLayoutEffect(() => {
+    const host = composerOverlayElement?.parentElement;
+    const stack = composerOverlayElement?.querySelector<HTMLElement>(
+      '[data-chat-composer-stack="true"]',
+    );
+    if (!composerOverlayElement || !host || !stack) return;
+    if (isDraftHeroState) {
+      host.style.removeProperty("--composer-occlusion");
+      return;
+    }
+    const update = () => {
+      const occlusion =
+        composerOverlayElement.getBoundingClientRect().bottom - stack.getBoundingClientRect().top;
+      host.style.setProperty("--composer-occlusion", `${Math.max(0, occlusion)}px`);
+    };
+    update();
+    const stopObserving = observeResize(composerOverlayElement, update);
+    return () => {
+      stopObserving();
+      host.style.removeProperty("--composer-occlusion");
+    };
+  }, [composerOverlayElement, isDraftHeroState]);
   const openPanelPullRequestUrl = useOpenPanelPullRequestUrl(activeThreadRef);
   const activeThreadReferenceCopyTarget = useMemo(
     () =>
