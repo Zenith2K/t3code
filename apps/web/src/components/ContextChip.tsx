@@ -93,6 +93,8 @@ function ContextChip({ className, kind, state, render, ...props }: ContextChipPr
   const defaultProps = {
     className: cn(contextChipVariants({ kind, state }), className),
     "data-slot": "context-chip",
+    // Stays when a tooltip or popover trigger renders the chip and replaces data-slot.
+    "data-context-chip": "",
     "data-state": state,
   };
   return useRender({
