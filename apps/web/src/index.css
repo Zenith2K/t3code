@@ -2012,9 +2012,10 @@ code {
 }
 
 /* Chips in chat prose take inline code's height so the two match in a sentence:
-   SF Mono's ~1.19em glyph box at 0.75rem, plus code's padding and border above. */
+   the default mono font's content box at 0.75rem (measured at 20px total in
+   Chromium on macOS), plus code's padding and border above. */
 .chat-markdown [data-context-chip] {
-  height: calc(0.75rem * 1.19 + 0.2rem + 2px);
+  height: calc(0.75rem * 1.2333 + 0.2rem + 2px);
 }
 
 .chat-markdown pre {
