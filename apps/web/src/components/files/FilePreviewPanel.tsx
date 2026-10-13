@@ -15,7 +15,6 @@ import {
 } from "@t3tools/shared/filePreview";
 import {
   DEFAULT_TOKENIZE_MAX_LENGTH,
-  DEFAULT_VIRTUAL_FILE_METRICS,
   VirtualizedFile,
   getFiletypeFromFileName,
   type File as FileInstance,
@@ -50,12 +49,11 @@ import { MediaVideoPlayer } from "~/components/media/MediaVideoPlayer";
 import { MediaActions, type MediaActionSource } from "~/components/media/MediaActions";
 import { MorphIcon } from "~/components/MorphIcon";
 import { useRemoteOpenState } from "~/remoteOpen";
-import { useCodeLineHeight } from "~/hooks/useCodeLineHeight";
 import { useClientSettings, useUpdateClientSettings } from "~/hooks/useSettings";
 import { useTheme } from "~/hooks/useTheme";
 import { getLocalStorageItem, setLocalStorageItem, useLocalStorage } from "~/hooks/useLocalStorage";
 import { useWorkspaceMutationRefresh } from "~/hooks/useWorkspaceMutationRefresh";
-import { resolveDiffThemeName } from "~/lib/diffRendering";
+import { CODE_FILE_METRICS, resolveDiffThemeName } from "~/lib/diffRendering";
 import { PREFERRED_HIGHLIGHTER } from "~/lib/syntaxHighlighting";
 import { cn } from "~/lib/utils";
 import type { ChatFileAttachment } from "~/types";
@@ -668,8 +666,6 @@ interface EditableFileSurfaceProps {
   resolvedTheme: "light" | "dark";
   revealRequestId: number;
   wordWrap: boolean;
-  /** Code row height; the surface remounts when it changes. */
-  lineHeight: number;
   onPostRender: FilePostRender;
   onPendingChange: (relativePath: string, pending: boolean) => void;
 }
@@ -688,7 +684,6 @@ function EditableFileSurface({
   resolvedTheme,
   revealRequestId,
   wordWrap,
-  lineHeight,
   onPostRender,
   onPendingChange,
 }: EditableFileSurfaceProps) {
@@ -925,7 +920,7 @@ function EditableFileSurface({
             edit={editable}
             editorOptions={editorOptions}
             onEditChange={handleEditChange}
-            metrics={{ ...DEFAULT_VIRTUAL_FILE_METRICS, lineHeight }}
+            metrics={CODE_FILE_METRICS}
             options={{
               disableFileHeader: true,
               enableGutterUtility: !hasOpenCommentForm,
@@ -980,7 +975,6 @@ function RenderedMarkdownSurface({
   | "revealLine"
   | "revealRequestId"
   | "wordWrap"
-  | "lineHeight"
   | "onPostRender"
 > & {
   threadRef: ScopedThreadRef;
@@ -1056,7 +1050,6 @@ export default function FilePreviewPanel({
   const draft = typeof composerDraftTarget === "string";
   const { resolvedTheme } = useTheme();
   const wordWrap = useClientSettings((settings) => settings.wordWrap);
-  const codeLineHeight = useCodeLineHeight();
   const canOperatePreview = useEnvironmentScope(environmentId, AuthPreviewOperateScope);
   const primaryEnvironmentId = usePrimaryEnvironmentId();
   const remoteOpenState = useRemoteOpenState(environmentId);
@@ -1470,7 +1463,7 @@ export default function FilePreviewPanel({
             ) : (
               <DiffWorkerPoolProvider>
                 <EditableFileSurface
-                  key={`${relativePath}:${resolvedTheme}:${codeLineHeight}`}
+                  key={`${relativePath}:${resolvedTheme}`}
                   environmentId={environmentId}
                   cwd={cwd}
                   relativePath={relativePath}
@@ -1479,7 +1472,6 @@ export default function FilePreviewPanel({
                   resolvedTheme={resolvedTheme}
                   revealRequestId={revealRequestId}
                   wordWrap={wordWrap}
-                  lineHeight={codeLineHeight}
                   onPostRender={onFilePostRender}
                   onPendingChange={onPendingChange}
                 />

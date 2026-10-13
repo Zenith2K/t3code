@@ -1,5 +1,5 @@
 import { parsePatchFiles } from "@pierre/diffs/utils/parsePatchFiles";
-import { parseDiffFromFile } from "@pierre/diffs";
+import { DEFAULT_VIRTUAL_FILE_METRICS, parseDiffFromFile } from "@pierre/diffs";
 import type { FileDiffMetadata } from "@pierre/diffs/types";
 
 const DIFF_THEME_NAMES = {
@@ -312,6 +312,12 @@ export function getDiffCollapseIconClassName(fileDiff: FileDiffMetadata): string
  * row tints instead of the renderer's bundled colors. Shared by the diff
  * panel and the file preview.
  */
+/** Row height of file and diff code; `--diffs-line-height` in index.css must match. */
+export const CODE_LINE_HEIGHT = 24;
+
+/** Virtualized file metrics with the app's code row height. */
+export const CODE_FILE_METRICS = { ...DEFAULT_VIRTUAL_FILE_METRICS, lineHeight: CODE_LINE_HEIGHT };
+
 export const DIFF_SURFACE_THEME_UNSAFE_CSS = `
 [data-diffs-header],
 [data-diff],

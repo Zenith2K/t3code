@@ -1721,6 +1721,8 @@ code {
    appearance font tokens. */
 :root {
   --diffs-font-family: var(--font-mono);
+  /* Virtualized views assume this row height through CODE_LINE_HEIGHT (diffRendering.ts). */
+  --diffs-line-height: 24px;
   --diffs-header-font-family: var(--font-sans);
 }
 
