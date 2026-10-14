@@ -2093,7 +2093,6 @@ code {
   background: color-mix(in srgb, var(--muted) 45%, transparent);
   overflow-wrap: break-word;
   word-break: normal;
-  font-size: 0.75rem;
 }
 
 .chat-markdown th,
