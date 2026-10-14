@@ -2080,49 +2080,41 @@ code {
   }
 }
 
-/* Diagnostics-style tables: row separators only, uppercase headers, and a
-   scroll-fade container for horizontal overflow. The root chat-markdown
-   wrapping rules (overflow-wrap: anywhere) would let columns shrink to single
-   characters and defeat the overflow — restore word-boundary wrapping so the
-   min column width is the longest word. */
+/* Tables are bordered cards that fit the chat lane: cells wrap instead of
+   scrolling sideways. The root chat-markdown wrapping rules (overflow-wrap:
+   anywhere) would let columns shrink to single characters, so cells wrap at
+   word boundaries. The scroll area stays as a last resort. */
 .chat-markdown table {
   width: 100%;
-  min-width: max-content;
-  border-collapse: collapse;
-  overflow-wrap: normal;
+  border: 1px solid var(--contrast-border);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
+  overflow-wrap: break-word;
   word-break: normal;
   font-size: 0.75rem;
 }
 
 .chat-markdown th,
 .chat-markdown td {
-  padding: 0.45rem 0.75rem;
+  padding: 0.55rem 0.85rem;
   text-align: left;
+  vertical-align: top;
 }
 
 .chat-markdown thead th {
-  border-bottom: 1px solid color-mix(in srgb, var(--contrast-border) 60%, transparent);
-  padding-block: 0.55rem;
   font-weight: 600;
-  white-space: nowrap;
+  color: var(--contrast-foreground);
 }
 
-.chat-markdown tbody td {
-  border-bottom: 1px solid color-mix(in srgb, var(--contrast-border) 60%, transparent);
+.chat-markdown :is(thead:has(+ tbody) tr, tbody tr:not(:last-child)) > :is(th, td) {
+  border-bottom: 1px solid var(--contrast-border);
 }
 
-/* Collapsed (default): single-line cells truncate so arbitrary chat content
-   cannot blow the column out; the footer toggle expands cells to wrap. */
-.chat-markdown .chat-markdown-table-container[data-expanded="false"] th,
-.chat-markdown .chat-markdown-table-container[data-expanded="false"] td {
-  overflow: hidden;
-  max-width: 24rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chat-markdown .chat-markdown-table-container[data-expanded="true"] td {
-  max-width: 24rem;
+/* Paths and URLs are the usual unbreakable tokens; let them break anywhere so
+   they never push the table wider than the lane. */
+.chat-markdown :is(td, th) :is(code, a) {
   overflow-wrap: anywhere;
 }
 
