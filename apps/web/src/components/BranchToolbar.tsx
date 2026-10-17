@@ -48,6 +48,7 @@ import { ThreadDetailsControl } from "./chat/ThreadDetailsControl";
 import {
   THREAD_DETAILS_PANEL_ICON_CLASS,
   THREAD_DETAILS_PANEL_LOCKED_ROW_CLASS,
+  THREAD_DETAILS_PANEL_TONE_CLASS,
 } from "./chat/threadDetailsPanelStyles";
 import { ComposerControl } from "./chat/ComposerControl";
 import {
@@ -195,10 +196,19 @@ const RunContextSelector = memo(function RunContextSelector({
         : resolveCurrentWorkspaceLabel(activeWorktreePath);
   const isPanel = displayMode === "panel";
   const isLocked = envLocked || (envModeLocked && (!isPanel || !showEnvironmentPicker));
-  const workspacePath =
-    forceNewWorktree || (effectiveEnvMode === "worktree" && !activeWorktreePath)
-      ? null
-      : (activeWorktreePath ?? workspaceRoot);
+  const isPendingWorktree =
+    forceNewWorktree || (effectiveEnvMode === "worktree" && !activeWorktreePath);
+  const workspacePath = isPendingWorktree ? null : (activeWorktreePath ?? workspaceRoot);
+  // The panel row shows the workspace as a tint instead of a second icon: a fill
+  // for an existing worktree, an outline for one that is created on send.
+  const panelTone = !isPanel
+    ? undefined
+    : isPendingWorktree
+      ? ("pending-worktree" as const)
+      : activeWorktreePath
+        ? ("worktree" as const)
+        : undefined;
+  const panelIconClass = cn(THREAD_DETAILS_PANEL_ICON_CLASS, panelTone && "text-current");
   const handleContextMenu = (event: ReactMouseEvent) => {
     if (isPanel && workspacePath) {
       showWorkspaceContextMenu(event, workspacePath);
@@ -209,9 +219,7 @@ const RunContextSelector = memo(function RunContextSelector({
       <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
         <WorkspaceIcon
           className={
-            isPanel
-              ? THREAD_DETAILS_PANEL_ICON_CLASS
-              : cn("size-3 shrink-0", showEnvironmentIndicator && "mx-0!")
+            isPanel ? panelIconClass : cn("size-3 shrink-0", showEnvironmentIndicator && "mx-0!")
           }
         />
       </TooltipTrigger>
@@ -224,31 +232,49 @@ const RunContextSelector = memo(function RunContextSelector({
       </TooltipPopup>
     </Tooltip>
   );
-  const icon = showEnvironmentIndicator ? (
-    // Button's base styles apply `-mx-0.5` to descendant SVGs, which eats 4px
-    // out of whatever gap we set. mx-0! cancels that so gap-0.5 reads as 2px.
-    <span className="inline-flex shrink-0 items-center gap-0.5">
+  const icon =
+    isPanel && showEnvironmentIndicator ? (
       <Tooltip>
         <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
           {autoEnvironmentLabel ? (
-            <ScaleIcon
-              className={isPanel ? THREAD_DETAILS_PANEL_ICON_CLASS : "size-3 shrink-0 mx-0!"}
-              aria-hidden="true"
-            />
+            <ScaleIcon className={panelIconClass} aria-hidden="true" />
           ) : (
             <EnvironmentMachineIcon
               kind={activeEnvironment?.machine ?? "server"}
-              className={isPanel ? THREAD_DETAILS_PANEL_ICON_CLASS : "size-3 shrink-0 mx-0!"}
+              className={panelIconClass}
             />
           )}
         </TooltipTrigger>
-        <TooltipPopup>{autoEnvironmentLabel ?? activeEnvironment?.label ?? "Run on"}</TooltipPopup>
+        <TooltipPopup>
+          {forceNewWorktree
+            ? "Each model starts in its own worktree."
+            : (workspacePath ?? workspaceLabel)}
+        </TooltipPopup>
       </Tooltip>
-      {workspaceIcon}
-    </span>
-  ) : (
-    workspaceIcon
-  );
+    ) : showEnvironmentIndicator ? (
+      // Button's base styles apply `-mx-0.5` to descendant SVGs, which eats 4px
+      // out of whatever gap we set. mx-0! cancels that so gap-0.5 reads as 2px.
+      <span className="inline-flex shrink-0 items-center gap-0.5">
+        <Tooltip>
+          <TooltipTrigger render={<span className="inline-flex shrink-0" />}>
+            {autoEnvironmentLabel ? (
+              <ScaleIcon className="size-3 shrink-0 mx-0!" aria-hidden="true" />
+            ) : (
+              <EnvironmentMachineIcon
+                kind={activeEnvironment?.machine ?? "server"}
+                className="size-3 shrink-0 mx-0!"
+              />
+            )}
+          </TooltipTrigger>
+          <TooltipPopup>
+            {autoEnvironmentLabel ?? activeEnvironment?.label ?? "Run on"}
+          </TooltipPopup>
+        </Tooltip>
+        {workspaceIcon}
+      </span>
+    ) : (
+      workspaceIcon
+    );
   const triggerContent = (
     <>
       {icon}
@@ -266,6 +292,7 @@ const RunContextSelector = memo(function RunContextSelector({
           "inline-flex h-7 min-w-0 max-w-[48%] flex-initial items-center justify-start gap-1 rounded-md border border-transparent px-1.75 font-normal text-muted-foreground/70 text-xs sm:h-6",
           isPanel && "max-w-full",
           isPanel && THREAD_DETAILS_PANEL_LOCKED_ROW_CLASS,
+          panelTone && THREAD_DETAILS_PANEL_TONE_CLASS[panelTone],
         )}
         onContextMenu={handleContextMenu}
         aria-label={isPanel ? "Run context" : undefined}
@@ -279,7 +306,13 @@ const RunContextSelector = memo(function RunContextSelector({
   return (
     <Menu>
       <MenuTrigger
-        render={isPanel ? <ThreadDetailsControl part="select" /> : <ComposerControl size="xs" />}
+        render={
+          isPanel ? (
+            <ThreadDetailsControl part="select" {...(panelTone ? { tone: panelTone } : {})} />
+          ) : (
+            <ComposerControl size="xs" />
+          )
+        }
         className={isPanel ? undefined : "min-w-0 max-w-[48%] flex-initial justify-start"}
         onContextMenu={handleContextMenu}
         onMouseDownCapture={

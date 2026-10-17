@@ -12,6 +12,7 @@ import {
   THREAD_DETAILS_PANEL_ICON_ACTION_CLASS,
   THREAD_DETAILS_PANEL_META_ACTION_CLASS,
   THREAD_DETAILS_PANEL_CHEVRON_CLASS,
+  THREAD_DETAILS_PANEL_TONE_CLASS,
 } from "./threadDetailsPanelStyles";
 import { ChevronDownIcon } from "lucide-react";
 
@@ -39,7 +40,12 @@ export function ThreadDetailsControl({
   panel?: boolean;
   part?: keyof typeof parts;
   multiline?: boolean;
-  tone?: "default" | "muted" | "primary" | "destructive";
+  tone?:
+    | "default"
+    | "muted"
+    | "primary"
+    | "destructive"
+    | keyof typeof THREAD_DETAILS_PANEL_TONE_CLASS;
 }) {
   const control = useRender({
     defaultTagName: "button",
@@ -55,6 +61,8 @@ export function ThreadDetailsControl({
           tone === "primary" && "text-primary hover:text-primary",
           tone === "destructive" &&
             "text-destructive hover:text-destructive data-pressed:text-destructive",
+          (tone === "worktree" || tone === "pending-worktree") &&
+            THREAD_DETAILS_PANEL_TONE_CLASS[tone],
           className,
         ),
       },
