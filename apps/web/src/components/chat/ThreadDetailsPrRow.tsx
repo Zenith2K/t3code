@@ -9,13 +9,11 @@ import {
   CheckIcon,
   ChevronDownIcon,
   EyeOffIcon,
-  FileDiffIcon,
-  GitBranchIcon,
   TriangleAlertIcon,
   WrenchIcon,
 } from "lucide-react";
 import { AsyncResult } from "effect/reactivity";
-import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, type MouseEvent as ReactMouseEvent } from "react";
 
 import { useLiveRefresh } from "~/hooks/useLiveRefresh";
 import { usePullRequestChecksRefresh } from "~/hooks/usePullRequestChecksRefresh";
@@ -65,7 +63,6 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
-import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   THREAD_DETAILS_PANEL_CHEVRON_CLASS,
@@ -91,6 +88,8 @@ export function ThreadDetailsPrRow({
   onOpen,
   onActed,
   onStopWatching,
+  detailsOpen,
+  onDetailsOpenChange,
 }: {
   environmentId: EnvironmentId;
   pr: ThreadPr;
@@ -103,6 +102,8 @@ export function ThreadDetailsPrRow({
   onOpen: (event: ReactMouseEvent<HTMLElement>) => void;
   onActed?: () => void;
   onStopWatching?: (() => void) | undefined;
+  detailsOpen?: boolean;
+  onDetailsOpenChange?: (open: boolean) => void;
 }) {
   const serverConfigs = useServerConfigs();
   const supportsPullRequests =
@@ -171,7 +172,9 @@ export function ThreadDetailsPrRow({
   });
   const { handoff, startHandoff } = usePullRequestHandoffs({ environmentId, detail });
   const [confirmingMerge, setConfirmingMerge] = useState(false);
-  const groupRef = useRef<HTMLDivElement>(null);
+  const [localDetailsOpen, setLocalDetailsOpen] = useState(false);
+  const isOpen = detailsOpen ?? localDetailsOpen;
+  const setOpen = onDetailsOpenChange ?? setLocalDetailsOpen;
 
   const rowAction = resolveThreadPanelPullRequestAction(detail);
   if (confirmingMerge && rowAction !== "merge") {
@@ -236,74 +239,13 @@ export function ThreadDetailsPrRow({
     <PullRequestGlyph.pullRequest className={THREAD_DETAILS_PANEL_ICON_CLASS} />
   );
 
-  const rowTooltip =
-    detail === null || statePresentation === null ? (
-      <TooltipPopup side="top">{status?.tooltip ?? `Pull request #${number}`}</TooltipPopup>
-    ) : (
-      <TooltipPopup
-        side="top"
-        align="start"
-        sideOffset={4}
-        variant="glass"
-        className="max-w-80 text-left whitespace-normal"
-      >
-        <div className="flex min-w-0 max-w-80 flex-col gap-2 px-1 py-2">
-          <div className="flex min-w-0 items-baseline gap-1.5 text-xs leading-none">
-            <span className="min-w-0 truncate font-medium text-foreground">{detail.title}</span>
-            <span className="shrink-0 text-muted-foreground">#{detail.number}</span>
-          </div>
-          <div className="grid gap-1.5 pl-0.5 text-xs text-muted-foreground">
-            <div className="flex min-w-0 items-center gap-2">
-              <statePresentation.Icon
-                aria-hidden
-                className={cn("size-3 shrink-0", statePresentation.toneClassName)}
-              />
-              <div className="min-w-0 truncate text-foreground/75">{statePresentation.label}</div>
-            </div>
-            <div className="flex min-w-0 items-center gap-2">
-              <GitBranchIcon className="size-3 shrink-0 stroke-muted-foreground" />
-              <div className="min-w-0 truncate text-foreground/75">
-                {detail.baseBranch} ← {detail.headBranch}
-              </div>
-            </div>
-            {detail.state === "open" && checksState !== "none" ? (
-              <div className="flex min-w-0 items-center gap-2">
-                <PullRequestCheckStatusIcon
-                  status={
-                    checksState === "failing"
-                      ? "failure"
-                      : checksState === "pending"
-                        ? "pending"
-                        : "success"
-                  }
-                />
-                <div className="min-w-0 truncate text-foreground/75">
-                  {describePullRequestChecks(detail.checks)}
-                </div>
-              </div>
-            ) : null}
-            {detail.isDraft && conflicting ? (
-              <div className="flex min-w-0 items-start gap-2 text-destructive">
-                <TriangleAlertIcon aria-hidden className="mt-0.5 size-3 shrink-0 stroke-current" />
-                <div className="min-w-0 flex-1 wrap-break-word leading-5">
-                  Merge conflicts with {detail.baseBranch}
-                </div>
-              </div>
-            ) : null}
-            <div className="flex min-w-0 items-center gap-2">
-              <FileDiffIcon className="size-3 shrink-0 stroke-muted-foreground" />
-              <div className="min-w-0 flex items-baseline gap-1 truncate text-foreground/75">
-                {detail.changedFiles.toLocaleString()}{" "}
-                {detail.changedFiles === 1 ? "file" : "files"}
-                <PullRequestDiffStat additions={detail.additions} deletions={detail.deletions} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </TooltipPopup>
-    );
+  const rowTooltip = (
+    <TooltipPopup side="top">
+      {detail?.title ?? status?.tooltip ?? `Pull request #${number}`}
+    </TooltipPopup>
+  );
 
-  const menuAction =
+  const prAction =
     rowAction === "resolve"
       ? {
           Icon: PullRequestGlyph.conflicting,
@@ -357,7 +299,6 @@ export function ThreadDetailsPrRow({
 
   const watching =
     onStopWatching !== undefined && (detail?.state ?? pr?.state ?? "open") === "open";
-  const hasMenu = menuAction !== null || waitingOnChecks || watching;
 
   const openRow = (text: string, part: "row" | "primary") => (
     <Tooltip>
@@ -401,64 +342,96 @@ export function ThreadDetailsPrRow({
 
   return (
     <>
-      {rowStatus === null && !hasMenu ? (
-        openRow(detail?.title ?? label, "row")
+      {detail === null ? (
+        openRow(label, "row")
       ) : (
-        <div ref={groupRef} className={THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS}>
-          {openRow(detail?.title ?? label, "primary")}
+        <div className={THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS}>
+          {openRow(detail.title, "primary")}
           {rowStatus}
-          {hasMenu ? (
-            <>
-              <span aria-hidden="true" className={THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS} />
-              <Menu>
-                <MenuTrigger
-                  render={
-                    <ThreadDetailsControl
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      part="secondary"
-                      aria-label={`Pull request #${number} actions`}
-                    />
-                  }
-                >
-                  <ChevronDownIcon aria-hidden className={THREAD_DETAILS_PANEL_CHEVRON_CLASS} />
-                </MenuTrigger>
-                <MenuPopup align="end" anchor={groupRef} className="w-(--anchor-width)">
-                  {menuAction ? (
-                    <MenuItem
-                      variant={menuAction.destructive ? "destructive" : "default"}
-                      disabled={actionPending || handoff !== null}
-                      onClick={menuAction.onClick}
-                    >
-                      <menuAction.Icon aria-hidden />
-                      {menuAction.pending ? menuAction.pendingLabel : menuAction.label}
-                      {menuAction.handoff ? (
-                        <ArrowUpRightIcon aria-hidden className="size-3.5" />
-                      ) : null}
-                    </MenuItem>
-                  ) : waitingOnChecks ? (
-                    <MenuItem disabled>
-                      <PullRequestGlyph.merged aria-hidden />
-                      Merge…
-                      <span className="ms-auto text-xs text-muted-foreground">
-                        waiting on checks
-                      </span>
-                    </MenuItem>
-                  ) : null}
-                  {(menuAction !== null || waitingOnChecks) && watching ? <MenuSeparator /> : null}
-                  {watching ? (
-                    <MenuItem onClick={onStopWatching}>
-                      <EyeOffIcon aria-hidden />
-                      Stop watching
-                    </MenuItem>
-                  ) : null}
-                </MenuPopup>
-              </Menu>
-            </>
-          ) : null}
+          <span aria-hidden="true" className={THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS} />
+          <ThreadDetailsControl
+            type="button"
+            variant="ghost"
+            size="sm"
+            part="secondary"
+            aria-expanded={isOpen}
+            aria-label={`${isOpen ? "Hide" : "Show"} pull request #${number} details`}
+            onClick={() => setOpen(!isOpen)}
+          >
+            <ChevronDownIcon
+              aria-hidden
+              className={cn(THREAD_DETAILS_PANEL_CHEVRON_CLASS, isOpen && "rotate-180")}
+            />
+          </ThreadDetailsControl>
         </div>
       )}
+      {isOpen && detail !== null ? (
+        <div
+          data-thread-pr-details
+          className="mb-1.5 ms-4.5 flex flex-col border-s border-border ps-2.5"
+        >
+          <div className="grid gap-0.5 px-2.5 py-1 text-xs text-muted-foreground">
+            <span className="truncate">
+              #{detail.number} · {detail.baseBranch} ← {detail.headBranch}
+            </span>
+            <span className="flex items-baseline gap-1">
+              {detail.changedFiles.toLocaleString()} {detail.changedFiles === 1 ? "file" : "files"}{" "}
+              ·
+              <PullRequestDiffStat additions={detail.additions} deletions={detail.deletions} />
+            </span>
+          </div>
+          {detail.state === "open" && !detail.isDraft && checksState !== "none" ? (
+            <div className="flex h-7 items-center gap-2.5 px-2.5 text-xs text-foreground/80">
+              <PullRequestCheckStatusIcon
+                status={
+                  checksState === "failing"
+                    ? "failure"
+                    : checksState === "pending"
+                      ? "pending"
+                      : "success"
+                }
+              />
+              <span className="min-w-0 truncate">{describePullRequestChecks(detail.checks)}</span>
+            </div>
+          ) : null}
+          {prAction ? (
+            <ThreadDetailsControl
+              type="button"
+              variant="ghost"
+              size="sm"
+              part="row"
+              tone={
+                prAction.destructive ? "destructive" : rowAction === "merge" ? "primary" : "default"
+              }
+              disabled={actionPending || handoff !== null}
+              onClick={prAction.onClick}
+            >
+              <prAction.Icon aria-hidden className="size-4 shrink-0" />
+              {prAction.pending ? prAction.pendingLabel : prAction.label}
+              {prAction.handoff ? <ArrowUpRightIcon aria-hidden className="size-3.5" /> : null}
+            </ThreadDetailsControl>
+          ) : waitingOnChecks ? (
+            <ThreadDetailsControl type="button" variant="ghost" size="sm" part="row" disabled>
+              <PullRequestGlyph.merged aria-hidden className="size-4 shrink-0" />
+              Merge…
+              <span className="ms-auto text-xs text-muted-foreground">waiting on checks</span>
+            </ThreadDetailsControl>
+          ) : null}
+          {watching ? (
+            <ThreadDetailsControl
+              type="button"
+              variant="ghost"
+              size="sm"
+              part="row"
+              tone="muted"
+              onClick={onStopWatching}
+            >
+              <EyeOffIcon aria-hidden className="size-4 shrink-0" />
+              Stop watching
+            </ThreadDetailsControl>
+          ) : null}
+        </div>
+      ) : null}
       {rowAction === "merge" ? (
         <AlertDialog open={confirmingMerge} onOpenChange={(open) => setConfirmingMerge(open)}>
           <AlertDialogPopup>

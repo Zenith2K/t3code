@@ -92,7 +92,10 @@ export function ThreadDetailsCard({
       const frame = element.closest<HTMLElement>("[data-thread-details-card]");
       const next = element.offsetHeight + (frame ? frame.offsetHeight - frame.clientHeight : 0);
       const lineage = element.querySelector<HTMLElement>("[data-thread-relationships-panel]");
-      const fittingHeight = next - (lineage?.offsetHeight ?? 0);
+      // An expanded pull request scrolls the card instead of dropping rows to make room for it.
+      const pullRequestDetails = element.querySelector<HTMLElement>("[data-thread-pr-details]");
+      const fittingHeight =
+        next - (lineage?.offsetHeight ?? 0) - (pullRequestDetails?.offsetHeight ?? 0);
       setMeasurements((current) => {
         const heights = current.key === measurementKey ? current.heights : { full: 0, compact: 0 };
         const fullContentHeight =

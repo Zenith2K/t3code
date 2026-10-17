@@ -81,11 +81,11 @@ it("requires a new merge click after passing checks become pending and pass agai
   );
   const clickMerge = async () => {
     await act(async () => {
-      container.querySelector<HTMLElement>('[aria-label="Pull request #1 actions"]')!.click();
+      container.querySelector<HTMLElement>('[aria-label="Show pull request #1 details"]')?.click();
     });
     await act(async () => {
-      [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
-        .find((item) => item.textContent?.trim() === "Merge…")!
+      [...container.querySelectorAll("button")]
+        .find((button) => button.textContent?.trim() === "Merge…")!
         .click();
     });
   };

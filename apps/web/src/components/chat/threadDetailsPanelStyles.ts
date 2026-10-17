@@ -22,7 +22,7 @@ export const THREAD_DETAILS_PANEL_LOCKED_ROW_CLASS = `h-8 w-full min-w-0 justify
 
 export const THREAD_DETAILS_PANEL_TONE_CLASS = {
   local:
-    "bg-info/10 text-info-foreground hover:!bg-info/15 data-pressed:!bg-info/15 dark:hover:!bg-info/15 dark:data-pressed:!bg-info/15",
+    "bg-info/10 text-info-foreground dark:text-blue-300 hover:!bg-info/15 data-pressed:!bg-info/15 dark:hover:!bg-info/15 dark:data-pressed:!bg-info/15",
   worktree:
     "bg-success/10 text-success-foreground hover:!bg-success/15 data-pressed:!bg-success/15 dark:hover:!bg-success/15 dark:data-pressed:!bg-success/15",
   "pending-worktree": "border-success/40 text-success-foreground",

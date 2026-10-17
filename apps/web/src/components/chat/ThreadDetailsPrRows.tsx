@@ -26,9 +26,13 @@ function ThreadDetailsPrLinkRow({
   onOpen,
   onActed,
   onStopWatching,
+  detailsOpen,
+  onDetailsOpenChange,
 }: {
   environmentId: EnvironmentId;
   link: ThreadPullRequestLink;
+  detailsOpen: boolean;
+  onDetailsOpenChange: (open: boolean) => void;
   onOpen: (event: ReactMouseEvent<HTMLElement>) => void;
   onActed?: (() => void) | undefined;
   onStopWatching?: (() => void) | undefined;
@@ -56,6 +60,8 @@ function ThreadDetailsPrLinkRow({
       openAriaLabel={link.url}
       onOpen={onOpen}
       onStopWatching={onStopWatching}
+      detailsOpen={detailsOpen}
+      onDetailsOpenChange={onDetailsOpenChange}
       {...(onActed ? { onActed } : {})}
     />
   );
@@ -74,6 +80,12 @@ export function ThreadDetailsPrRows({
   onOpenLink: (event: ReactMouseEvent<HTMLElement>, url: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  // One pull request shows its details at a time, so the panel grows by one body at most.
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const detailsProps = (key: string) => ({
+    detailsOpen: openKey === key,
+    onDetailsOpenChange: (open: boolean) => setOpenKey(open ? key : null),
+  });
   const watch = useAtomCommand(threadEnvironment.watchPullRequest, { reportFailure: true });
   const stopWatching = (link: ThreadPullRequestLink | null) =>
     link?.watch === undefined
@@ -89,7 +101,13 @@ export function ThreadDetailsPrRows({
               watching: false,
             },
           });
-  const currentRow = <ThreadDetailsPrRow {...row} onStopWatching={stopWatching(currentLink)} />;
+  const currentRow = (
+    <ThreadDetailsPrRow
+      {...row}
+      onStopWatching={stopWatching(currentLink)}
+      {...detailsProps(currentLink === null ? "current" : threadPullRequestKeyOf(currentLink))}
+    />
+  );
   const rest =
     currentLink === null
       ? []
@@ -110,6 +128,7 @@ export function ThreadDetailsPrRows({
               onOpen={(event) => onOpenLink(event, link.url)}
               onActed={row.onActed}
               onStopWatching={stopWatching(link)}
+              {...detailsProps(threadPullRequestKeyOf(link))}
             />
           ))
         : null}
