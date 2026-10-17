@@ -298,7 +298,7 @@ export function resolveSelectedMergeMethod(
   return allowedMergeMethods.includes(preferred) ? preferred : (allowedMergeMethods[0] ?? "merge");
 }
 
-function canPerformPullRequestAction(
+export function canPerformPullRequestAction(
   detail: Pick<PullRequestActionableDetail, "capabilities" | "viewerPermissions"> | null,
   action: PullRequestAction,
 ): boolean {

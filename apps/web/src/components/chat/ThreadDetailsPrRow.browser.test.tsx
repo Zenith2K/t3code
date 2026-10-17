@@ -66,7 +66,7 @@ afterEach(() => {
   state.extraStatus = null;
 });
 
-it("requires a new merge click after passing checks become pending and pass again", () => {
+it("requires a new merge click after passing checks become pending and pass again", async () => {
   const render = () => (
     <ThreadDetailsPrRow
       environmentId={EnvironmentId.make("environment")}
@@ -79,16 +79,20 @@ it("requires a new merge click after passing checks become pending and pass agai
       onOpen={vi.fn()}
     />
   );
-  const clickMerge = () =>
-    act(() => {
-      [...container.querySelectorAll("button")]
-        .find((button) => button.textContent?.trim() === "Merge")!
+  const clickMerge = async () => {
+    await act(async () => {
+      container.querySelector<HTMLElement>('[aria-label="Pull request #1 actions"]')!.click();
+    });
+    await act(async () => {
+      [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+        .find((item) => item.textContent?.trim() === "Merge…")!
         .click();
     });
+  };
   const dialogs = () => [...document.querySelectorAll('[role="alertdialog"]')];
 
   act(() => root.render(render()));
-  clickMerge();
+  await clickMerge();
   expect(dialogs()).toHaveLength(1);
   act(() => {
     state.status = "pending";
@@ -100,7 +104,7 @@ it("requires a new merge click after passing checks become pending and pass agai
     root.render(render());
   });
   expect(dialogs()).toHaveLength(0);
-  clickMerge();
+  await clickMerge();
   expect(dialogs()).toHaveLength(1);
   expect(state.perform).not.toHaveBeenCalled();
 });
