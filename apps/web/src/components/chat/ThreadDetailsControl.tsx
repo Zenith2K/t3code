@@ -61,7 +61,7 @@ export function ThreadDetailsControl({
           tone === "primary" && "text-primary hover:text-primary",
           tone === "destructive" &&
             "text-destructive hover:text-destructive data-pressed:text-destructive",
-          (tone === "worktree" || tone === "pending-worktree") &&
+          (tone === "local" || tone === "worktree" || tone === "pending-worktree") &&
             THREAD_DETAILS_PANEL_TONE_CLASS[tone],
           className,
         ),

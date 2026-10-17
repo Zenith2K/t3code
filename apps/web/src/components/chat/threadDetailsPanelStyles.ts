@@ -21,6 +21,8 @@ export const THREAD_DETAILS_PANEL_SELECT_ROW_CLASS = `${THREAD_DETAILS_PANEL_ROW
 export const THREAD_DETAILS_PANEL_LOCKED_ROW_CLASS = `h-8 w-full min-w-0 justify-start rounded-lg border border-transparent ${THREAD_DETAILS_PANEL_ROW_CONTENT_CLASS} text-[13px] font-medium text-foreground/80 sm:h-8 sm:text-[13px]`;
 
 export const THREAD_DETAILS_PANEL_TONE_CLASS = {
+  local:
+    "bg-info/10 text-info-foreground hover:!bg-info/15 data-pressed:!bg-info/15 dark:hover:!bg-info/15 dark:data-pressed:!bg-info/15",
   worktree:
     "bg-success/10 text-success-foreground hover:!bg-success/15 data-pressed:!bg-success/15 dark:hover:!bg-success/15 dark:data-pressed:!bg-success/15",
   "pending-worktree": "border-success/40 text-success-foreground",

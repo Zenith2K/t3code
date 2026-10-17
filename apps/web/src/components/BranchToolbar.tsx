@@ -199,15 +199,16 @@ const RunContextSelector = memo(function RunContextSelector({
   const isPendingWorktree =
     forceNewWorktree || (effectiveEnvMode === "worktree" && !activeWorktreePath);
   const workspacePath = isPendingWorktree ? null : (activeWorktreePath ?? workspaceRoot);
-  // The panel row shows the workspace as a tint instead of a second icon: a fill
-  // for an existing worktree, an outline for one that is created on send.
+  // The panel row shows the workspace as a tint instead of a second icon: blue
+  // for the project folder, green for an existing worktree, and a green outline
+  // for one that is created on send.
   const panelTone = !isPanel
     ? undefined
     : isPendingWorktree
       ? ("pending-worktree" as const)
       : activeWorktreePath
         ? ("worktree" as const)
-        : undefined;
+        : ("local" as const);
   const panelIconClass = cn(THREAD_DETAILS_PANEL_ICON_CLASS, panelTone && "text-current");
   const handleContextMenu = (event: ReactMouseEvent) => {
     if (isPanel && workspacePath) {
