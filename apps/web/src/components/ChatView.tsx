@@ -4751,11 +4751,23 @@ export default function ChatView(props: ChatViewProps) {
     };
     update();
     const stopObserving = observeResize(composerOverlayElement, update);
+    // Docking slides the stack down from the hero position without resizing
+    // the overlay, so the first measurement sees it mid-pane. Re-measure once
+    // the slide settles.
+    let disposed = false;
+    for (const animation of draftHeroTransitionGroupRef.current?.getAnimations() ?? []) {
+      void animation.finished
+        .catch(() => undefined)
+        .then(() => {
+          if (!disposed) update();
+        });
+    }
     return () => {
+      disposed = true;
       stopObserving();
       host.style.removeProperty("--composer-occlusion");
     };
-  }, [composerOverlayElement, isDraftHeroState]);
+  }, [composerOverlayElement, draftHeroTransitionGroupRef, isDraftHeroState]);
   const openPanelPullRequestUrl = useOpenPanelPullRequestUrl(activeThreadRef);
   const activeThreadReferenceCopyTarget =
     activeThreadId === null || !isServerThread
