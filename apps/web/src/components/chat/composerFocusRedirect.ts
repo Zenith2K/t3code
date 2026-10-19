@@ -58,11 +58,21 @@ export function shouldRedirectInputToComposer(event: Event): boolean {
   return true;
 }
 
+// The right panel's "Open a surface" launcher listens on window too, but it
+// mounts after this redirect registers, so without this its letters would be
+// typed into the composer instead.
+function surfaceLauncherClaimsKey(key: string): boolean {
+  const launcher = document.querySelector<HTMLElement>("[data-surface-launcher-keys]");
+  if (!launcher || launcher.closest("[inert]")) return false;
+  return (launcher.dataset.surfaceLauncherKeys ?? "").toLowerCase().includes(key.toLowerCase());
+}
+
 export function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
   if (event.isComposing) return false;
   if (event.metaKey || event.ctrlKey || event.altKey) return false;
   if (event.key.length !== 1) return false;
   if (!shouldRedirectInputToComposer(event)) return false;
+  if (surfaceLauncherClaimsKey(event.key)) return false;
 
   return true;
 }
