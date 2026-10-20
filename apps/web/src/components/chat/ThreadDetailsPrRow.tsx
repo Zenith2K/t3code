@@ -1,4 +1,3 @@
-import { PullRequestChangeBreakdownRows } from "../pullRequest/PullRequestChangeBreakdownStat";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { selectEnvironmentQueryData } from "@t3tools/client-runtime/state/runtime";
@@ -14,7 +13,7 @@ import {
   WrenchIcon,
 } from "lucide-react";
 import { AsyncResult } from "effect/reactivity";
-import { useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 
 import { useLiveRefresh } from "~/hooks/useLiveRefresh";
 import { usePullRequestChecksRefresh } from "~/hooks/usePullRequestChecksRefresh";
@@ -32,7 +31,6 @@ import {
   buildResolveConflictsPrompt,
   canPerformPullRequestAction,
   classifyPullRequestChecks,
-  describePullRequestChecks,
   isPullRequestConflicting,
   resolveSelectedMergeMethod,
   allowedPullRequestMergeMethods,
@@ -41,8 +39,6 @@ import {
 import { PullRequestChecksPopover } from "../pullRequest/PullRequestChecksPopover";
 import {
   pullRequestChecksState,
-  PullRequestCheckStatusIcon,
-  PullRequestDiffStat,
   resolvePullRequestState,
 } from "../pullRequest/pullRequestPresentation";
 import {
@@ -64,6 +60,7 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
+import { Menu, MenuItem, MenuPopup, MenuSeparator, MenuTrigger } from "../ui/menu";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import {
   THREAD_DETAILS_PANEL_CHEVRON_CLASS,
@@ -89,8 +86,6 @@ export function ThreadDetailsPrRow({
   onOpen,
   onActed,
   onStopWatching,
-  detailsOpen,
-  onDetailsOpenChange,
 }: {
   environmentId: EnvironmentId;
   pr: ThreadPr;
@@ -103,8 +98,6 @@ export function ThreadDetailsPrRow({
   onOpen: (event: ReactMouseEvent<HTMLElement>) => void;
   onActed?: () => void;
   onStopWatching?: (() => void) | undefined;
-  detailsOpen?: boolean;
-  onDetailsOpenChange?: (open: boolean) => void;
 }) {
   const serverConfigs = useServerConfigs();
   const supportsPullRequests =
@@ -173,9 +166,7 @@ export function ThreadDetailsPrRow({
   });
   const { handoff, startHandoff } = usePullRequestHandoffs({ environmentId, detail });
   const [confirmingMerge, setConfirmingMerge] = useState(false);
-  const [localDetailsOpen, setLocalDetailsOpen] = useState(false);
-  const isOpen = detailsOpen ?? localDetailsOpen;
-  const setOpen = onDetailsOpenChange ?? setLocalDetailsOpen;
+  const groupRef = useRef<HTMLDivElement>(null);
 
   const rowAction = resolveThreadPanelPullRequestAction(detail);
   if (confirmingMerge && rowAction !== "merge") {
@@ -341,105 +332,68 @@ export function ThreadDetailsPrRow({
       />
     ) : null;
 
+  const hasMenu = prAction !== null || waitingOnChecks || watching;
+
   return (
     <>
-      {detail === null ? (
-        openRow(label, "row")
+      {rowStatus === null && !hasMenu ? (
+        openRow(detail?.title ?? label, "row")
       ) : (
-        <div className={THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS}>
-          {openRow(detail.title, "primary")}
+        <div ref={groupRef} className={THREAD_DETAILS_PANEL_SPLIT_GROUP_CLASS}>
+          {openRow(detail?.title ?? label, "primary")}
           {rowStatus}
-          <span aria-hidden="true" className={THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS} />
-          <ThreadDetailsControl
-            type="button"
-            variant="ghost"
-            size="sm"
-            part="secondary"
-            aria-expanded={isOpen}
-            aria-label={`${isOpen ? "Hide" : "Show"} pull request #${number} details`}
-            onClick={() => setOpen(!isOpen)}
-          >
-            <ChevronDownIcon
-              aria-hidden
-              className={cn(THREAD_DETAILS_PANEL_CHEVRON_CLASS, isOpen && "rotate-180")}
-            />
-          </ThreadDetailsControl>
+          {hasMenu ? (
+            <>
+              <span aria-hidden="true" className={THREAD_DETAILS_PANEL_SPLIT_SEPARATOR_CLASS} />
+              <Menu>
+                <MenuTrigger
+                  render={
+                    <ThreadDetailsControl
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      part="secondary"
+                      aria-label={`Pull request #${number} actions`}
+                    />
+                  }
+                >
+                  <ChevronDownIcon aria-hidden className={THREAD_DETAILS_PANEL_CHEVRON_CLASS} />
+                </MenuTrigger>
+                <MenuPopup align="end" anchor={groupRef} className="w-(--anchor-width)">
+                  {prAction ? (
+                    <MenuItem
+                      variant={prAction.destructive ? "destructive" : "default"}
+                      disabled={actionPending || handoff !== null}
+                      onClick={prAction.onClick}
+                    >
+                      <prAction.Icon aria-hidden />
+                      {prAction.pending ? prAction.pendingLabel : prAction.label}
+                      {prAction.handoff ? (
+                        <ArrowUpRightIcon aria-hidden className="size-3.5" />
+                      ) : null}
+                    </MenuItem>
+                  ) : waitingOnChecks ? (
+                    <MenuItem disabled>
+                      <PullRequestGlyph.merged aria-hidden />
+                      Merge…
+                      <span className="ms-auto text-xs text-muted-foreground">
+                        waiting on checks
+                      </span>
+                    </MenuItem>
+                  ) : null}
+                  {(prAction !== null || waitingOnChecks) && watching ? <MenuSeparator /> : null}
+                  {watching ? (
+                    <MenuItem onClick={onStopWatching}>
+                      <EyeOffIcon aria-hidden />
+                      Stop watching
+                    </MenuItem>
+                  ) : null}
+                </MenuPopup>
+              </Menu>
+            </>
+          ) : null}
         </div>
       )}
-      {isOpen && detail !== null ? (
-        <div
-          data-thread-pr-details
-          className="mb-1.5 ms-4.5 flex flex-col border-s border-border ps-2.5"
-        >
-          <div className="grid gap-0.5 px-2.5 py-1 text-xs text-muted-foreground">
-            <span className="truncate">
-              #{detail.number} · {detail.baseBranch} ← {detail.headBranch}
-            </span>
-            <span className="flex items-baseline gap-1">
-              {detail.changedFiles.toLocaleString()} {detail.changedFiles === 1 ? "file" : "files"}{" "}
-              ·
-              <PullRequestDiffStat additions={detail.additions} deletions={detail.deletions} />
-            </span>
-            {reference !== null && (detail.additions > 0 || detail.deletions > 0) ? (
-              <PullRequestChangeBreakdownRows
-                environmentId={environmentId}
-                reference={reference}
-                className="text-foreground/75"
-              />
-            ) : null}
-          </div>
-          {detail.state === "open" && !detail.isDraft && checksState !== "none" ? (
-            <div className="flex h-7 items-center gap-2.5 px-2.5 text-xs text-foreground/80">
-              <PullRequestCheckStatusIcon
-                status={
-                  checksState === "failing"
-                    ? "failure"
-                    : checksState === "pending"
-                      ? "pending"
-                      : "success"
-                }
-              />
-              <span className="min-w-0 truncate">{describePullRequestChecks(detail.checks)}</span>
-            </div>
-          ) : null}
-          {prAction ? (
-            <ThreadDetailsControl
-              type="button"
-              variant="ghost"
-              size="sm"
-              part="row"
-              tone={
-                prAction.destructive ? "destructive" : rowAction === "merge" ? "primary" : "default"
-              }
-              disabled={actionPending || handoff !== null}
-              onClick={prAction.onClick}
-            >
-              <prAction.Icon aria-hidden className="size-4 shrink-0" />
-              {prAction.pending ? prAction.pendingLabel : prAction.label}
-              {prAction.handoff ? <ArrowUpRightIcon aria-hidden className="size-3.5" /> : null}
-            </ThreadDetailsControl>
-          ) : waitingOnChecks ? (
-            <ThreadDetailsControl type="button" variant="ghost" size="sm" part="row" disabled>
-              <PullRequestGlyph.merged aria-hidden className="size-4 shrink-0" />
-              Merge…
-              <span className="ms-auto text-xs text-muted-foreground">waiting on checks</span>
-            </ThreadDetailsControl>
-          ) : null}
-          {watching ? (
-            <ThreadDetailsControl
-              type="button"
-              variant="ghost"
-              size="sm"
-              part="row"
-              tone="muted"
-              onClick={onStopWatching}
-            >
-              <EyeOffIcon aria-hidden className="size-4 shrink-0" />
-              Stop watching
-            </ThreadDetailsControl>
-          ) : null}
-        </div>
-      ) : null}
       {rowAction === "merge" ? (
         <AlertDialog open={confirmingMerge} onOpenChange={(open) => setConfirmingMerge(open)}>
           <AlertDialogPopup>

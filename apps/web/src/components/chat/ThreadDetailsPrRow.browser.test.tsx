@@ -146,11 +146,11 @@ it("requires a new merge click after passing checks become pending and pass agai
   );
   const clickMerge = async () => {
     await act(async () => {
-      container.querySelector<HTMLElement>('[aria-label="Show pull request #1 details"]')?.click();
+      container.querySelector<HTMLElement>('[aria-label="Pull request #1 actions"]')!.click();
     });
     await act(async () => {
-      [...container.querySelectorAll("button")]
-        .find((button) => button.textContent?.trim() === "Merge…")!
+      [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+        .find((item) => item.textContent?.trim() === "Merge…")!
         .click();
     });
   };
@@ -236,17 +236,17 @@ it("shows the current checkout recovery detail when fixing checks fails and is r
     );
   });
 
-  await act(async () => {
-    container.querySelector<HTMLElement>('[aria-label="Show pull request #1 details"]')?.click();
-  });
   for (const error of [first, second]) {
     state.prepareThread.mockImplementationOnce(async () => {
       state.checkoutError = error;
       return { _tag: "Failure", cause: Cause.fail(error) };
     });
     await act(async () => {
-      [...container.querySelectorAll("button")]
-        .find((button) => button.textContent?.trim() === "Fix in new thread")!
+      container.querySelector<HTMLElement>('[aria-label="Pull request #1 actions"]')!.click();
+    });
+    await act(async () => {
+      [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+        .find((item) => item.textContent?.trim() === "Fix in new thread")!
         .click();
     });
   }
@@ -254,31 +254,4 @@ it("shows the current checkout recovery detail when fixing checks fails and is r
     expect.stringContaining(first.detail),
     second.detail,
   ]);
-});
-
-it("splits the change by file kind in the pull request details", async () => {
-  act(() =>
-    root.render(
-      <ThreadDetailsPrRow
-        environmentId={EnvironmentId.make("environment")}
-        pr={null}
-        number={1}
-        reference={{ repository: "owner/repo", number: 1 }}
-        status={null}
-        project={{ id: ProjectId.make("project"), repositoryIdentity: null } as never}
-        label="Test PR"
-        openAriaLabel="Open PR"
-        onOpen={vi.fn()}
-      />,
-    ),
-  );
-  await expect
-    .poll(() => container.querySelector<HTMLElement>('[aria-label="Show pull request #1 details"]'))
-    .not.toBeNull();
-  await act(async () => {
-    container.querySelector<HTMLElement>('[aria-label="Show pull request #1 details"]')!.click();
-  });
-  await expect
-    .poll(() => container.querySelector("[data-thread-pr-details]")?.textContent)
-    .toMatch(/Docs\+7-3/);
 });
