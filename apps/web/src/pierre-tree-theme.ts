@@ -21,6 +21,8 @@ export const PIERRE_TREE_UNSAFE_CSS = `
       10px + 0.5px - var(--trees-icon-width) / 2 - var(--trees-item-row-gap)
     );
   }
+  [data-truncate-content='visible'] { overflow: hidden; text-overflow: ellipsis; }
+  [data-truncate-marker] { display: none; }
   button[data-type='item'], button[data-type='item']::before { border-radius: var(--radius-md); }
   /* Pierre draws every icon at 16px; fit file icons to the 14px slot and shrink chevrons. */
   [data-item-section='icon'] > svg { width: 14px; height: 14px; }

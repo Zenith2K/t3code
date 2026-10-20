@@ -91,11 +91,13 @@ export function ThreadDetailsCard({
     const measure = () => {
       const frame = element.closest<HTMLElement>("[data-thread-details-card]");
       const next = element.offsetHeight + (frame ? frame.offsetHeight - frame.clientHeight : 0);
-      const lineage = element.querySelector<HTMLElement>("[data-thread-relationships-panel]");
-      // An expanded pull request scrolls the card instead of dropping rows to make room for it.
-      const pullRequestDetails = element.querySelector<HTMLElement>("[data-thread-pr-details]");
+      // PR lists, lineage, and an expanded pull request scroll as they expand. Counting them toward
+      // density would hide the section and workspace controls when the user asks to see more rows.
+      const lists = element.querySelectorAll<HTMLElement>(
+        "[data-thread-relationships-panel], [data-thread-details-pr-list], [data-thread-pr-details]:not([data-thread-details-pr-list] *)",
+      );
       const fittingHeight =
-        next - (lineage?.offsetHeight ?? 0) - (pullRequestDetails?.offsetHeight ?? 0);
+        next - Array.from(lists).reduce((sum, list) => sum + list.offsetHeight, 0);
       setMeasurements((current) => {
         const heights = current.key === measurementKey ? current.heights : { full: 0, compact: 0 };
         const fullContentHeight =

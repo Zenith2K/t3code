@@ -1,3 +1,4 @@
+import { PullRequestChangeBreakdownRows } from "../pullRequest/PullRequestChangeBreakdownStat";
 import { ThreadDetailsControl } from "./ThreadDetailsControl";
 import { PullRequestGlyph } from "../pullRequest/pullRequestIcons";
 import { selectEnvironmentQueryData } from "@t3tools/client-runtime/state/runtime";
@@ -379,6 +380,13 @@ export function ThreadDetailsPrRow({
               ·
               <PullRequestDiffStat additions={detail.additions} deletions={detail.deletions} />
             </span>
+            {reference !== null && (detail.additions > 0 || detail.deletions > 0) ? (
+              <PullRequestChangeBreakdownRows
+                environmentId={environmentId}
+                reference={reference}
+                className="text-foreground/75"
+              />
+            ) : null}
           </div>
           {detail.state === "open" && !detail.isDraft && checksState !== "none" ? (
             <div className="flex h-7 items-center gap-2.5 px-2.5 text-xs text-foreground/80">
