@@ -55,6 +55,7 @@ import {
   renderMacPasskeyEntitlements,
   resolveMacWebAuthnEntitlements,
   resolveClerkPasskeyNativeArtifacts,
+  resolveMacNotarizationEnv,
   resolveMacPasskeySigningConfiguration,
   resolveDesktopRuntimeDependencies,
   resolveMergedStageDependencies,
@@ -2222,6 +2223,35 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
         T3CODE_CLERK_PUBLISHABLE_KEY: `pk_test_${btoa("example.clerk.accounts.dev$")}`,
       }),
       undefined,
+    );
+  });
+
+  it("reads macOS notarization credentials from the repo env and resolves the key path", () => {
+    const dirs = { repoRoot: "/repo", homeDir: "/Users/me" };
+    assert.deepEqual(resolveMacNotarizationEnv({}, dirs), {});
+    assert.deepEqual(
+      resolveMacNotarizationEnv(
+        {
+          APPLE_API_KEY: " ~/.private_keys/AuthKey_ABC.p8 ",
+          APPLE_API_KEY_ID: "ABC",
+          APPLE_API_ISSUER: "issuer",
+          APPLE_TEAM_ID: "ignored",
+        },
+        dirs,
+      ),
+      {
+        APPLE_API_KEY: "/Users/me/.private_keys/AuthKey_ABC.p8",
+        APPLE_API_KEY_ID: "ABC",
+        APPLE_API_ISSUER: "issuer",
+      },
+    );
+    assert.equal(
+      resolveMacNotarizationEnv({ APPLE_API_KEY: "keys/AuthKey.p8" }, dirs).APPLE_API_KEY,
+      "/repo/keys/AuthKey.p8",
+    );
+    assert.equal(
+      resolveMacNotarizationEnv({ APPLE_API_KEY: "/abs/AuthKey.p8" }, dirs).APPLE_API_KEY,
+      "/abs/AuthKey.p8",
     );
   });
 

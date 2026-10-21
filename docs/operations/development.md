@@ -220,7 +220,9 @@ certificate signing. An intentionally unsigned build requires `--signed=false` o
 environment variable `T3CODE_DESKTOP_SIGNED=false`.
 
 Signing is separate from notarization; notarization runs only when its Apple credentials are
-configured. Windows signing remains opt-in with `--signed`. See the
+configured. Create an App Store Connect API team key and set `APPLE_API_KEY` (path to the
+`.p8`; `~/` works), `APPLE_API_KEY_ID`, and `APPLE_API_ISSUER` in the shell or the gitignored
+root `.env`. Notarizing adds a few minutes per build. Windows signing remains opt-in with `--signed`. See the
 [release runbook](./release.md) for platform credentials. Native macOS passkeys additionally
 need `T3CODE_APPLE_TEAM_ID`, `T3CODE_MACOS_PROVISIONING_PROFILE`, and the Clerk configuration;
 follow [Connect setup](./connect-setup.md#desktop-passkeys).

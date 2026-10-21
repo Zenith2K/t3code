@@ -1266,6 +1266,36 @@ function normalizePasskeyRpDomain(value: string): string {
   return parsed.hostname;
 }
 
+const MAC_NOTARIZATION_ENV_KEYS = [
+  "APPLE_API_KEY",
+  "APPLE_API_KEY_ID",
+  "APPLE_API_ISSUER",
+] as const;
+
+/**
+ * electron-builder notarizes when these App Store Connect API key values are in its
+ * environment. Local builds may keep them in the gitignored repo `.env` beside the T3 Connect
+ * config; `loadRepoEnv` lets the shell override them. dotenv does not expand `~`, so a key path
+ * starting with `~/` resolves against the home directory and a relative one against the repo.
+ */
+export function resolveMacNotarizationEnv(
+  repoEnv: Readonly<Record<string, string | undefined>>,
+  dirs: { readonly repoRoot: string; readonly homeDir: string },
+): Partial<Record<(typeof MAC_NOTARIZATION_ENV_KEYS)[number], string>> {
+  const resolved: Partial<Record<(typeof MAC_NOTARIZATION_ENV_KEYS)[number], string>> = {};
+  for (const key of MAC_NOTARIZATION_ENV_KEYS) {
+    const value = repoEnv[key]?.trim();
+    if (value) resolved[key] = value;
+  }
+  const keyPath = resolved.APPLE_API_KEY;
+  if (keyPath?.startsWith("~/")) {
+    resolved.APPLE_API_KEY = `${dirs.homeDir}${keyPath.slice(1)}`;
+  } else if (keyPath && !keyPath.startsWith("/")) {
+    resolved.APPLE_API_KEY = `${dirs.repoRoot}/${keyPath}`;
+  }
+  return resolved;
+}
+
 export function resolveMacPasskeySigningConfiguration(
   env: Readonly<Record<string, string | undefined>>,
 ): MacPasskeySigningConfiguration | undefined {
@@ -4022,6 +4052,15 @@ const buildDesktopArtifactUnlocked = Effect.fn("buildDesktopArtifactUnlocked")(f
     ...process.env,
   };
   buildEnv.npm_config_user_agent = resolvePackageManagerUserAgent(rootPackageJson.packageManager);
+  if (options.platform === "mac" && options.signed) {
+    Object.assign(
+      buildEnv,
+      resolveMacNotarizationEnv(loadRepoEnv({ repoRoot }), {
+        repoRoot,
+        homeDir: process.env.HOME ?? "",
+      }),
+    );
+  }
   for (const [key, value] of Object.entries(buildEnv)) {
     if (value === "") {
       delete buildEnv[key];
