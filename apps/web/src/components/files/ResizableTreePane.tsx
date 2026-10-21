@@ -11,21 +11,18 @@ const MAX_TREE_WIDTH = 640;
 /**
  * Right-docked file tree beside a file or diff view, resized by dragging its left edge.
  * The width persists under `storageKey` and never takes more than half the row, so the
- * content beside it keeps room in narrow panels. With `resizable` off the pane fills the row
- * instead, keeping the same element so the tree inside keeps its state when content opens.
+ * content beside it keeps room in narrow panels.
  */
 export function ResizableTreePane({
   storageKey,
   defaultWidth,
   minWidth,
-  resizable = true,
   className,
   children,
 }: {
   storageKey: string;
   defaultWidth: number;
   minWidth: number;
-  resizable?: boolean;
   className?: string;
   children: ReactNode;
 }) {
@@ -54,15 +51,12 @@ export function ResizableTreePane({
     <aside
       ref={hostRef}
       className={cn(
-        "relative flex min-h-0 min-w-0",
-        resizable ? "w-(--resizable-width) shrink-0 border-l border-border/60" : "flex-1",
+        "relative flex min-h-0 w-(--resizable-width) min-w-0 shrink-0 border-l border-border/60",
         className,
       )}
-      style={
-        resizable ? ({ [RESIZABLE_WIDTH_PROPERTY]: `${width}px` } as CSSProperties) : undefined
-      }
+      style={{ [RESIZABLE_WIDTH_PROPERTY]: `${width}px` } as CSSProperties}
     >
-      {resizable ? <RightPanelResizeHandle handlers={handlers} className="touch-none" /> : null}
+      <RightPanelResizeHandle handlers={handlers} className="touch-none" />
       {children}
     </aside>
   );

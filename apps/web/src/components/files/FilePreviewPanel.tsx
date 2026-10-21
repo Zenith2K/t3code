@@ -38,7 +38,7 @@ import {
   squashAtomCommandFailure,
 } from "@t3tools/client-runtime/state/runtime";
 import { mediaFileReference } from "@t3tools/client-runtime/media-reference";
-import { FolderTree, Globe2, WrapTextIcon } from "lucide-react";
+import { FolderTree, Folders, Globe2, WrapTextIcon } from "lucide-react";
 import { Code2, Eye, Table2 } from "lucide";
 import * as Schema from "effect/Schema";
 import { useEffect, useRef, useState } from "react";
@@ -56,10 +56,16 @@ import { getLocalStorageItem, setLocalStorageItem, useLocalStorage } from "~/hoo
 import { useWorkspaceMutationRefresh } from "~/hooks/useWorkspaceMutationRefresh";
 import { CODE_FILE_METRICS, resolveDiffThemeName } from "~/lib/diffRendering";
 import { PREFERRED_HIGHLIGHTER } from "~/lib/syntaxHighlighting";
-import { cn } from "~/lib/utils";
 import type { ChatFileAttachment } from "~/types";
 import { isHostPath } from "@t3tools/shared/path";
 import { resolvePathLinkTarget } from "@t3tools/shared/fileLinks";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "~/components/ui/empty";
 import { ScrollArea } from "~/components/ui/scroll-area";
 import { stackedThreadToast, toastManager } from "~/components/ui/toast";
 import { type DraftId, useComposerDraftStore } from "~/composerDraftStore";
@@ -1311,10 +1317,18 @@ export default function FilePreviewPanel({
         </div>
       ) : null}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div
-          className={cn("min-w-0 flex-1 flex-col overflow-hidden", previewPath ? "flex" : "hidden")}
-        >
-          {isFolder ? null : relativePath && attachment ? (
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          {previewPath === null ? (
+            <Empty size="compact">
+              <EmptyHeader>
+                <EmptyMedia>
+                  <Folders aria-hidden className="size-7 text-muted-foreground" />
+                </EmptyMedia>
+                <EmptyTitle>Open file</EmptyTitle>
+                <EmptyDescription>Select a file from the workspace tree</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : relativePath && attachment ? (
             <AttachmentFilePreview
               key={`${environmentId}:${attachment.id}`}
               name={attachment.name}
@@ -1451,7 +1465,6 @@ export default function FilePreviewPanel({
             storageKey="t3code:file-tree-width"
             defaultWidth={352}
             minWidth={256}
-            resizable={Boolean(previewPath)}
             className="bg-background"
           >
             <FileBrowserPanel
