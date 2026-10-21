@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { describe, expect, it } from "vite-plus/test";
 
 import { shouldTypeToFocusComposer } from "./composerFocusRedirect";
 
@@ -15,22 +15,22 @@ function typeOn(target: Element, key: string): boolean {
   return redirected;
 }
 
-function mountLauncher(keys: string): HTMLElement {
+function attach(element: Element): Disposable {
+  document.body.append(element);
+  return { [Symbol.dispose]: () => element.remove() };
+}
+
+function launcherFor(keys: string): HTMLElement {
   const launcher = document.createElement("div");
   launcher.tabIndex = 0;
   launcher.dataset.surfaceLauncherKeys = keys;
-  document.body.append(launcher);
   return launcher;
 }
-
-afterEach(() => {
-  document.body.replaceChildren();
-});
 
 describe("shouldTypeToFocusComposer", () => {
   it("sends letters typed on the chat to the composer", () => {
     const chat = document.createElement("div");
-    document.body.append(chat);
+    using _chat = attach(chat);
 
     expect(typeOn(chat, "a")).toBe(true);
   });
@@ -39,13 +39,14 @@ describe("shouldTypeToFocusComposer", () => {
     const deviceScreen = document.createElement("div");
     deviceScreen.setAttribute("role", "application");
     deviceScreen.tabIndex = 0;
-    document.body.append(deviceScreen);
+    using _deviceScreen = attach(deviceScreen);
 
     expect(typeOn(deviceScreen, "a")).toBe(false);
   });
 
   it("leaves an open surface launcher's letters to the launcher", () => {
-    const launcher = mountLauncher("BTFD");
+    const launcher = launcherFor("BTFD");
+    using _launcher = attach(launcher);
 
     expect(typeOn(launcher, "f")).toBe(false);
     expect(typeOn(document.body, "B")).toBe(false);
@@ -55,9 +56,8 @@ describe("shouldTypeToFocusComposer", () => {
   it("types into the composer once the launcher's panel is closing", () => {
     const panel = document.createElement("div");
     panel.inert = true;
-    document.body.append(panel);
-    const launcher = mountLauncher("F");
-    panel.append(launcher);
+    panel.append(launcherFor("F"));
+    using _panel = attach(panel);
 
     expect(typeOn(document.body, "f")).toBe(true);
   });
