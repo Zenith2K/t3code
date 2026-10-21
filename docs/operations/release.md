@@ -545,8 +545,9 @@ risk, manually dispatch `channel=nightly`; this still publishes a real nightly n
 prerelease, desktop updater release, hosted nightly alias, and marketing site, but it does not update stable app aliases or
 commit a version bump to `main`. Only run it when a real nightly release is acceptable.
 
-Manual `channel=stable` is also a real stable-channel release. Omitting signing secrets only makes
-platform artifacts unsigned; it does not prevent publication.
+Manual `channel=stable` is also a real stable-channel release. This fork requires macOS certificate
+signing by default, so a runner without a signing identity fails that artifact build. Explicitly
+opting out of signing, or omitting Windows signing secrets, does not prevent publication.
 
 ## 2) Apple signing + notarization setup (macOS)
 

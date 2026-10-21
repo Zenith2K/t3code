@@ -146,7 +146,8 @@ Runtime-discovered entrypoints and dependency exceptions belong in [knip.jsonc](
 
 ## Desktop artifacts
 
-Local artifact builds are unsigned by default and write to `release/`:
+Local artifact builds write to `release/`. In this fork, macOS artifacts are signed by
+default; Linux and Windows retain their unsigned defaults:
 
 ```sh
 vp run dist:desktop:dmg
@@ -211,6 +212,15 @@ passed as `--wsl-runtime`; see the
 
 ### Signing and passkeys
 
-Add `--signed` after configuring the platform credentials in the
-[release runbook](./release.md). macOS passkeys need a signed, provisioned app; follow the
-[Connect setup](./connect-setup.md#desktop-passkeys) for local signing and renderer HMR.
+macOS artifact builds automatically use a Developer ID Application certificate from your
+Keychain and fail if signing cannot complete. This keeps macOS Local Network permission
+associated with the app across builds. If multiple certificates are installed, select one
+with `CSC_NAME`. No provisioning profile or T3 Connect configuration is needed for ordinary
+certificate signing. An intentionally unsigned build requires `--signed=false` or the process
+environment variable `T3CODE_DESKTOP_SIGNED=false`.
+
+Signing is separate from notarization; notarization runs only when its Apple credentials are
+configured. Windows signing remains opt-in with `--signed`. See the
+[release runbook](./release.md) for platform credentials. Native macOS passkeys additionally
+need `T3CODE_APPLE_TEAM_ID`, `T3CODE_MACOS_PROVISIONING_PROFILE`, and the Clerk configuration;
+follow [Connect setup](./connect-setup.md#desktop-passkeys).

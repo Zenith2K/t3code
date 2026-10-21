@@ -2215,6 +2215,16 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
     ),
   );
 
+  it("allows certificate signing without opting into provisioned macOS passkeys", () => {
+    assert.equal(resolveMacPasskeySigningConfiguration({}), undefined);
+    assert.equal(
+      resolveMacPasskeySigningConfiguration({
+        T3CODE_CLERK_PUBLISHABLE_KEY: `pk_test_${btoa("example.clerk.accounts.dev$")}`,
+      }),
+      undefined,
+    );
+  });
+
   it("derives macOS passkey signing configuration from the Clerk publishable key", () => {
     const configuration = resolveMacPasskeySigningConfiguration({
       T3CODE_APPLE_TEAM_ID: "abc1234567",
@@ -2237,6 +2247,7 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       T3CODE_CLERK_PASSKEY_RP_DOMAINS:
         " Clerk.Example.com,example.clerk.accounts.dev,clerk.example.com ",
     });
+    assert.ok(configuration);
     const entitlements = renderMacPasskeyEntitlements(configuration, {
       touchIdKeychainAccessGroup: undefined,
       browserPasskeys: false,
@@ -2682,6 +2693,48 @@ it.layer(NodeServices.layer)("build-desktop-artifact", (it) => {
       cause,
     );
   });
+
+  it.effect("requires macOS artifact signing by default and honors explicit opt-outs", () =>
+    Effect.gen(function* () {
+      for (const [platform, env, signed] of [
+        ["mac", {}, true],
+        ["mac", { T3CODE_DESKTOP_SIGNED: "false" }, false],
+        ["linux", {}, false],
+        ["win", {}, false],
+      ] as const) {
+        const resolved = yield* resolveBuildOptions({
+          platform: Option.some(platform),
+          target: Option.none(),
+          arch: Option.some("arm64"),
+          buildVersion: Option.none(),
+          outputDir: Option.none(),
+          skipBuild: Option.none(),
+          keepStage: Option.none(),
+          signed: Option.none(),
+          verbose: Option.none(),
+          mockUpdates: Option.none(),
+          mockUpdateServerPort: Option.none(),
+          wslRuntime: Option.none(),
+        }).pipe(Effect.provide(ConfigProvider.layer(ConfigProvider.fromEnv({ env }))));
+        assert.equal(resolved.signed, signed, platform);
+        if (platform === "mac") {
+          const config = yield* createBuildConfig(
+            platform,
+            resolved.target,
+            "1.2.3",
+            resolved.signed,
+            false,
+            undefined,
+            undefined,
+          );
+          assert.equal(config.forceCodeSigning, signed);
+          const mac = config.mac as Record<string, unknown>;
+          assert.equal(typeof mac.sign, signed ? "string" : "undefined");
+          assert.notProperty(mac, "provisioningProfile");
+        }
+      }
+    }),
+  );
 
   it.effect("resolves default platform and architecture from host references", () =>
     Effect.gen(function* () {
