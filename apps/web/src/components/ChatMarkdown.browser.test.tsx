@@ -138,7 +138,7 @@ describe("ChatMarkdown table layout", () => {
     expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth + 1);
   });
 
-  it("expands a wide table past the lane and offers no toggle for a table that fits", async () => {
+  it("opens a squeezed table at its natural width in a dialog, and leaves tables that fit alone", async () => {
     setup();
     await using screen = await render(
       <div style={{ width: "36rem" }}>
@@ -158,19 +158,22 @@ describe("ChatMarkdown table layout", () => {
         </div>
       </div>,
     );
-    const [wide, small] = [...screen.container.querySelectorAll(".chat-markdown-table-container")];
-    expect(buttonsLabelled(small as HTMLElement, "Expand table")).toHaveLength(0);
+    const [wide, small] = [
+      ...screen.container.querySelectorAll<HTMLElement>(".chat-markdown-table-container"),
+    ];
+    expect(buttonsLabelled(small!, "Open table")).toHaveLength(0);
+    const inlineWidth = wide!.querySelector("table")!.getBoundingClientRect().width;
 
-    const table = wide!.querySelector("table")!;
-    const viewport = table.closest<HTMLElement>('[data-slot="scroll-area-viewport"]')!;
-    await act(async () => buttonsLabelled(wide as HTMLElement, "Expand table")[0]!.click());
+    await act(async () => buttonsLabelled(wide!, "Open table")[0]!.click());
 
-    expect(table.getBoundingClientRect().width).toBeGreaterThan(viewport.clientWidth);
+    const dialog = await vi.waitFor(() => document.querySelector<HTMLElement>('[role="dialog"]')!);
+    const table = dialog.querySelector("table")!;
+    expect(table.textContent).toContain("Keep the complete explanation readable");
+    expect(table.getBoundingClientRect().width).toBeGreaterThan(inlineWidth);
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
     for (const cell of table.tBodies[0]!.rows[0]!.cells) {
       expect(cell.getBoundingClientRect().width).toBeLessThanOrEqual(24 * rem + 1);
     }
-    expect(buttonsLabelled(wide as HTMLElement, "Fit table to chat")).toHaveLength(1);
   });
 });
 

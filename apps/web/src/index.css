@@ -2171,7 +2171,7 @@ code {
 /* Tables are bordered cards that fit the chat lane: cells wrap instead of
    scrolling sideways. The root chat-markdown wrapping rules (overflow-wrap:
    anywhere) would let columns shrink to single characters, so cells wrap at
-   word boundaries. Expanded tables scroll sideways instead (below). */
+   word boundaries. Squeezed tables open expanded in a dialog (below). */
 .chat-markdown table {
   width: 100%;
   border: 1px solid var(--contrast-border);
@@ -2205,8 +2205,8 @@ code {
   overflow-wrap: anywhere;
 }
 
-/* Expanded: each column takes the width its text needs, up to 24rem, and the
-   table scrolls sideways once that is wider than the lane. */
+/* Expanded (the open-table dialog): each column takes the width its text
+   needs, up to 24rem, and the table scrolls sideways past the dialog width. */
 .chat-markdown .chat-markdown-table-container[data-expanded="true"] table {
   width: max-content;
   min-width: 100%;

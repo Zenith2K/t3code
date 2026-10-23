@@ -1,4 +1,4 @@
-import { Check, Copy, Maximize2, Minimize2 } from "lucide";
+import { Check, Copy, Maximize2 } from "lucide";
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
 
 import { observeResize } from "../../lib/observeResize";
@@ -8,15 +8,17 @@ import {
 } from "../../markdown-clipboard";
 import { MorphIcon } from "../MorphIcon";
 import { Button } from "../ui/button";
+import { Dialog, DialogPanel, DialogPopup, DialogTitle } from "../ui/dialog";
 import { Menu, MenuItem, MenuPopup, MenuTrigger } from "../ui/menu";
 import { ScrollArea } from "../ui/scroll-area";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { reportMarkdownActionFailure } from "./markdownActionFailure";
 
 /**
- * Whether the expanded layout is wider than the chat lane. Only then does the
- * toggle change anything, so tables that already fit hide it. Measures with the
- * container briefly expanded and restores it before the browser paints.
+ * Whether the expanded layout is wider than the chat lane, meaning the fitted
+ * table had to squeeze its columns. Only then is opening it worth offering.
+ * Measures with the container briefly expanded and restores it before the
+ * browser paints.
  */
 function tableOutgrowsLane(container: HTMLElement, table: HTMLTableElement): boolean {
   const viewport = table.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
@@ -34,17 +36,16 @@ function tableOutgrowsLane(container: HTMLElement, table: HTMLTableElement): boo
 }
 
 /**
- * Tables fit the chat lane by wrapping their cells. Wide tables can expand so
- * each column takes the width its text needs and the table scrolls sideways.
+ * Tables fit the chat lane by wrapping their cells. A squeezed table opens in a
+ * dialog where each column takes the width its text needs.
  */
 export function MarkdownTable({ children, ...props }: ComponentProps<"table">) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const tableRef = useRef<HTMLTableElement | null>(null);
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const [outgrowsLane, setOutgrowsLane] = useState(false);
   const [copied, setCopied] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const expandLabel = expanded ? "Fit table to chat" : "Expand table";
   const copyLabel = copied ? "Copied" : "Copy table";
 
   const measureOutgrowsLane = () => {
@@ -101,65 +102,75 @@ export function MarkdownTable({ children, ...props }: ComponentProps<"table">) {
     [],
   );
 
+  const copyMenu = (
+    <Menu>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <MenuTrigger
+              render={
+                <Button type="button" variant="ghost-muted" size="icon-xs" aria-label={copyLabel} />
+              }
+            />
+          }
+        >
+          <MorphIcon className="size-3" icon={copied ? Check : Copy} />
+        </TooltipTrigger>
+        <TooltipPopup side="top">{copyLabel}</TooltipPopup>
+      </Tooltip>
+      <MenuPopup align="end">
+        <MenuItem onClick={() => handleCopy("markdown")}>Copy as Markdown</MenuItem>
+        <MenuItem onClick={() => handleCopy("csv")}>Copy as CSV</MenuItem>
+      </MenuPopup>
+    </Menu>
+  );
+
   return (
-    <div
-      ref={containerRef}
-      className="chat-markdown-table-container"
-      data-expanded={expanded ? "true" : "false"}
-    >
+    <div ref={containerRef} className="chat-markdown-table-container">
       <ScrollArea radius="none" chainVerticalScroll scrollFade className="w-full max-w-full">
         <table ref={tableRef} {...props}>
           {children}
         </table>
       </ScrollArea>
       <div className="mt-0.5 flex items-center justify-between select-none">
-        {outgrowsLane || expanded ? (
+        {outgrowsLane ? (
           <Tooltip>
             <TooltipTrigger
               render={
                 <Button
                   type="button"
-                  variant={expanded ? "secondary" : "ghost-muted"}
+                  variant="ghost-muted"
                   size="icon-xs"
-                  aria-pressed={expanded}
-                  onClick={() => setExpanded((value) => !value)}
-                  aria-label={expandLabel}
+                  onClick={() => setOpen(true)}
+                  aria-label="Open table"
                 />
               }
             >
-              <MorphIcon className="size-3" icon={expanded ? Minimize2 : Maximize2} />
+              <MorphIcon className="size-3" icon={Maximize2} />
             </TooltipTrigger>
-            <TooltipPopup side="top">{expandLabel}</TooltipPopup>
+            <TooltipPopup side="top">Open table</TooltipPopup>
           </Tooltip>
         ) : (
           <span />
         )}
-        <Menu>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <MenuTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant="ghost-muted"
-                      size="icon-xs"
-                      aria-label={copyLabel}
-                    />
-                  }
-                />
-              }
-            >
-              <MorphIcon className="size-3" icon={copied ? Check : Copy} />
-            </TooltipTrigger>
-            <TooltipPopup side="top">{copyLabel}</TooltipPopup>
-          </Tooltip>
-          <MenuPopup align="end">
-            <MenuItem onClick={() => handleCopy("markdown")}>Copy as Markdown</MenuItem>
-            <MenuItem onClick={() => handleCopy("csv")}>Copy as CSV</MenuItem>
-          </MenuPopup>
-        </Menu>
+        {copyMenu}
       </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogPopup className="w-auto max-w-[min(72rem,calc(100vw-2rem))]">
+          <DialogTitle className="sr-only">Table</DialogTitle>
+          <DialogPanel>
+            {/* The dialog portals out of the message, so it brings its own markdown scope. */}
+            <div className="chat-markdown">
+              <div className="chat-markdown-table-container" data-expanded="true">
+                <ScrollArea radius="none" scrollFade className="w-full max-w-full">
+                  <table {...props}>{children}</table>
+                </ScrollArea>
+                <div className="mt-0.5 flex justify-end select-none">{copyMenu}</div>
+              </div>
+            </div>
+          </DialogPanel>
+        </DialogPopup>
+      </Dialog>
     </div>
   );
 }
