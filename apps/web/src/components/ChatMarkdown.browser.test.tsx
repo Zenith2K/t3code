@@ -137,6 +137,41 @@ describe("ChatMarkdown table layout", () => {
     expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth + 1);
     expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth + 1);
   });
+
+  it("expands a wide table past the lane and offers no toggle for a table that fits", async () => {
+    setup();
+    await using screen = await render(
+      <div style={{ width: "36rem" }}>
+        <div className="@container/chat-lane chat-content-lane overflow-x-clip">
+          <ChatMarkdown
+            cwd={undefined}
+            text={[
+              "| Change summary | Reason details | Verification status | Release impact | Followup actions |",
+              "| --- | --- | --- | --- | --- |",
+              "| Keep the complete explanation readable in the conversation. | Allow each column to wrap its prose within the available space in the current chat lane. | Check that the text still fits and remains readable. | Keep the existing layout for file previews. | Check the table again after resizing the conversation lane. |",
+              "",
+              "| Key | Value |",
+              "| --- | --- |",
+              "| a | b |",
+            ].join("\n")}
+          />
+        </div>
+      </div>,
+    );
+    const [wide, small] = [...screen.container.querySelectorAll(".chat-markdown-table-container")];
+    expect(buttonsLabelled(small as HTMLElement, "Expand table")).toHaveLength(0);
+
+    const table = wide!.querySelector("table")!;
+    const viewport = table.closest<HTMLElement>('[data-slot="scroll-area-viewport"]')!;
+    await act(async () => buttonsLabelled(wide as HTMLElement, "Expand table")[0]!.click());
+
+    expect(table.getBoundingClientRect().width).toBeGreaterThan(viewport.clientWidth);
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    for (const cell of table.tBodies[0]!.rows[0]!.cells) {
+      expect(cell.getBoundingClientRect().width).toBeLessThanOrEqual(24 * rem + 1);
+    }
+    expect(buttonsLabelled(wide as HTMLElement, "Fit table to chat")).toHaveLength(1);
+  });
 });
 
 describe("ChatMarkdown streaming", () => {

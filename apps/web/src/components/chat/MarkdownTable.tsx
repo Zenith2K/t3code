@@ -1,6 +1,7 @@
-import { Check, Copy } from "lucide";
-import { useEffect, useRef, useState, type ComponentProps } from "react";
+import { Check, Copy, Maximize2, Minimize2 } from "lucide";
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from "react";
 
+import { observeResize } from "../../lib/observeResize";
 import {
   serializeTableElementToCsv,
   serializeTableElementToMarkdown,
@@ -12,12 +13,57 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { reportMarkdownActionFailure } from "./markdownActionFailure";
 
-/** Tables wrap their cells to fit the chat lane, so there is no cell-expand toggle. */
+/**
+ * Whether the expanded layout is wider than the chat lane. Only then does the
+ * toggle change anything, so tables that already fit hide it. Measures with the
+ * container briefly expanded and restores it before the browser paints.
+ */
+function tableOutgrowsLane(container: HTMLElement, table: HTMLTableElement): boolean {
+  const viewport = table.closest<HTMLElement>('[data-slot="scroll-area-viewport"]');
+  if (!viewport) return false;
+  const scrollLeft = viewport.scrollLeft;
+  const previous = container.dataset.expanded;
+  container.dataset.expanded = "true";
+  try {
+    return table.getBoundingClientRect().width > viewport.clientWidth + 1;
+  } finally {
+    if (previous === undefined) delete container.dataset.expanded;
+    else container.dataset.expanded = previous;
+    if (scrollLeft > 0) viewport.scrollLeft = scrollLeft;
+  }
+}
+
+/**
+ * Tables fit the chat lane by wrapping their cells. Wide tables can expand so
+ * each column takes the width its text needs and the table scrolls sideways.
+ */
 export function MarkdownTable({ children, ...props }: ComponentProps<"table">) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const tableRef = useRef<HTMLTableElement | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [outgrowsLane, setOutgrowsLane] = useState(false);
   const [copied, setCopied] = useState(false);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expandLabel = expanded ? "Fit table to chat" : "Expand table";
   const copyLabel = copied ? "Copied" : "Copy table";
+
+  const measureOutgrowsLane = () => {
+    const container = containerRef.current;
+    const table = tableRef.current;
+    if (!container || !table) return;
+    setOutgrowsLane(tableOutgrowsLane(container, table));
+  };
+
+  // A streamed cell can widen the expanded layout while the fitted table keeps
+  // its size, so remeasure after every render, not only on resize.
+  useLayoutEffect(measureOutgrowsLane);
+
+  // The lane can resize without rendering this table.
+  useLayoutEffect(() => {
+    const table = tableRef.current;
+    if (!table) return;
+    return observeResize(table, measureOutgrowsLane);
+  }, [measureOutgrowsLane]);
 
   const handleCopy = (format: "markdown" | "csv") => {
     const table = containerRef.current?.querySelector("table");
@@ -56,11 +102,38 @@ export function MarkdownTable({ children, ...props }: ComponentProps<"table">) {
   );
 
   return (
-    <div ref={containerRef} className="chat-markdown-table-container">
+    <div
+      ref={containerRef}
+      className="chat-markdown-table-container"
+      data-expanded={expanded ? "true" : "false"}
+    >
       <ScrollArea radius="none" chainVerticalScroll scrollFade className="w-full max-w-full">
-        <table {...props}>{children}</table>
+        <table ref={tableRef} {...props}>
+          {children}
+        </table>
       </ScrollArea>
-      <div className="mt-0.5 flex items-center justify-end select-none">
+      <div className="mt-0.5 flex items-center justify-between select-none">
+        {outgrowsLane || expanded ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant={expanded ? "secondary" : "ghost-muted"}
+                  size="icon-xs"
+                  aria-pressed={expanded}
+                  onClick={() => setExpanded((value) => !value)}
+                  aria-label={expandLabel}
+                />
+              }
+            >
+              <MorphIcon className="size-3" icon={expanded ? Minimize2 : Maximize2} />
+            </TooltipTrigger>
+            <TooltipPopup side="top">{expandLabel}</TooltipPopup>
+          </Tooltip>
+        ) : (
+          <span />
+        )}
         <Menu>
           <Tooltip>
             <TooltipTrigger

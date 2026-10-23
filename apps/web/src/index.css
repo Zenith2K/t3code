@@ -2171,7 +2171,7 @@ code {
 /* Tables are bordered cards that fit the chat lane: cells wrap instead of
    scrolling sideways. The root chat-markdown wrapping rules (overflow-wrap:
    anywhere) would let columns shrink to single characters, so cells wrap at
-   word boundaries. The scroll area stays as a last resort. */
+   word boundaries. Expanded tables scroll sideways instead (below). */
 .chat-markdown table {
   width: 100%;
   border: 1px solid var(--contrast-border);
@@ -2203,6 +2203,17 @@ code {
    they never push the table wider than the lane. */
 .chat-markdown :is(td, th) :is(code, a) {
   overflow-wrap: anywhere;
+}
+
+/* Expanded: each column takes the width its text needs, up to 24rem, and the
+   table scrolls sideways once that is wider than the lane. */
+.chat-markdown .chat-markdown-table-container[data-expanded="true"] table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.chat-markdown .chat-markdown-table-container[data-expanded="true"] :is(th, td) {
+  max-width: 24rem;
 }
 
 /* Formula cells keep their natural width and scroll with the table. */
