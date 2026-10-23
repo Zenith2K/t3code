@@ -47,6 +47,17 @@ export function eventPathContainsSelector(event: Event, selector: string): boole
 }
 
 const SECRET_REQUEST_SELECTOR = '[data-v2-item-type="secret_request"]';
+const SURFACE_LAUNCHER_KEYS_ATTRIBUTE = "data-surface-launcher-keys";
+
+// The right-panel launcher registers its own window capture listener when it
+// mounts. When the panel opens after page load that listener runs after ours,
+// so we must leave its letters alone or the composer takes them first.
+function isSurfaceLauncherKey(key: string): boolean {
+  const launcherKeys = document
+    .querySelector(`[${SURFACE_LAUNCHER_KEYS_ATTRIBUTE}]`)
+    ?.getAttribute(SURFACE_LAUNCHER_KEYS_ATTRIBUTE);
+  return launcherKeys?.toLowerCase().includes(key.toLowerCase()) ?? false;
+}
 
 export function shouldRedirectInputToComposer(event: Event): boolean {
   if (event.defaultPrevented) return false;
@@ -59,21 +70,12 @@ export function shouldRedirectInputToComposer(event: Event): boolean {
   return true;
 }
 
-// The right panel's "Open a surface" launcher listens on window too, but it
-// mounts after this redirect registers, so without this its letters would be
-// typed into the composer instead.
-function surfaceLauncherClaimsKey(key: string): boolean {
-  const launcher = document.querySelector<HTMLElement>("[data-surface-launcher-keys]");
-  if (!launcher || launcher.closest("[inert]")) return false;
-  return (launcher.dataset.surfaceLauncherKeys ?? "").toLowerCase().includes(key.toLowerCase());
-}
-
 export function shouldTypeToFocusComposer(event: KeyboardEvent): boolean {
   if (event.isComposing) return false;
   if (event.metaKey || event.ctrlKey || event.altKey) return false;
   if (event.key.length !== 1) return false;
   if (!shouldRedirectInputToComposer(event)) return false;
-  if (surfaceLauncherClaimsKey(event.key)) return false;
+  if (isSurfaceLauncherKey(event.key)) return false;
 
   return true;
 }
