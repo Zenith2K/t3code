@@ -70,30 +70,6 @@ export function PullRequestChangeBreakdownStat({
   );
 }
 
-/**
- * The split shown inline, for surfaces that already sit behind a hover, such as the thread
- * details card. It reads on mount, so it costs the host a request only once the card opens.
- */
-export function PullRequestChangeBreakdownRows({
-  environmentId,
-  reference,
-  className,
-}: {
-  environmentId: EnvironmentId;
-  reference: PullRequestRef;
-  className: string;
-}) {
-  const query = useEnvironmentQuery(
-    pullRequestEnvironment.changeBreakdown({ environmentId, input: reference }),
-  );
-  if (!query.data) return null;
-  return (
-    <div className={className}>
-      <ChangeBreakdownGrid breakdown={query.data} />
-    </div>
-  );
-}
-
 function ChangeBreakdownGrid({
   breakdown,
   total,
